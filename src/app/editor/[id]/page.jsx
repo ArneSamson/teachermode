@@ -3,7 +3,8 @@
 import { use } from 'react'; // 1. Importeer 'use' uit React
 import { opdrachtenDB } from '@/lib/mockData';
 import { notFound } from 'next/navigation';
-import CodeEvaluator from '@/components/CodeEvaluator'; 
+import CodeEvaluator from '@/components/CodeEvaluator';
+import Link from 'next/link';
 
 export default function EditorPage({ params }) {
   // 2. Pak de params uit met de use() hook
@@ -27,7 +28,11 @@ export default function EditorPage({ params }) {
     );
   }
 
-  return (
+  return (<>
+  
+    <Link href="/dashboard" className="text-blue-600 hover:underline mb-4 inline-block">
+      &larr; Terug naar overzicht
+    </Link>
     <div className="p-8 max-w-6xl mx-auto">
       <div className="mb-6 bg-white p-6 rounded shadow-sm">
         <h2 className="text-2xl font-bold mb-4">Oefening: {opdracht.titel}</h2>
@@ -36,13 +41,14 @@ export default function EditorPage({ params }) {
         <div 
           className="text-gray-800 text-lg leading-relaxed bg-gray-50 p-4 border-l-4 border-blue-500 rounded"
           dangerouslySetInnerHTML={{ __html: opdracht.uitleg }}
-        />
+          />
       </div>
       
       <CodeEvaluator 
         initialCode={opdracht.start_code} 
         testScript={opdracht.test_script} 
-      /> 
+        /> 
     </div>
+    </>
   );
 }
