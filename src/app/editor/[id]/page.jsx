@@ -30,11 +30,19 @@ export default function EditorPage({ params }) {
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <div className="mb-6 bg-white p-6 rounded shadow-sm">
-        <h2 className="text-2xl font-bold mb-2">Oefening: {opdracht.titel}</h2>
-        <p className="text-gray-700">Bouw je oplossing in de editor hieronder.</p>
+        <h2 className="text-2xl font-bold mb-4">Oefening: {opdracht.titel}</h2>
+        
+        {/* Hier injecteren we de uitleg inclusief eventuele HTML opmaak */}
+        <div 
+          className="text-gray-800 text-lg leading-relaxed bg-gray-50 p-4 border-l-4 border-blue-500 rounded"
+          dangerouslySetInnerHTML={{ __html: opdracht.uitleg }}
+        />
       </div>
       
-      <CodeEvaluator initialCode={opdracht.start_code} /> 
+      <CodeEvaluator 
+        initialCode={opdracht.start_code} 
+        testScript={opdracht.test_script} 
+      /> 
     </div>
   );
 }

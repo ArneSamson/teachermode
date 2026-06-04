@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { html } from '@codemirror/lang-html';
 
-export default function CodeEvaluator({ initialCode }) {
+export default function CodeEvaluator({ initialCode, testScript }) {
   // We gebruiken nu de initialCode prop uit de database als startwaarde
   const [code, setCode] = useState(initialCode || '');
   const [feedback, setFeedback] = useState({ status: 'idle', message: "Klik op 'Code Uitvoeren' om je oplossing te testen." });
@@ -24,48 +24,15 @@ export default function CodeEvaluator({ initialCode }) {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  const handleRunAndTest = () => {
-    setFeedback({ status: 'testing', message: 'Aan het testen...' });
+    const handleRunAndTest = () => {
+        setFeedback({ status: 'testing', message: 'Aan het testen...' });
 
-    const testScript = `
-      <script>
-        function runTest() {
-          try {
-            const element = document.getElementById('vierkant');
-            
-            if (!element) {
-              window.parent.postMessage({ type: 'test-result', success: false, message: 'Geen element met id="vierkant" gevonden.' }, '*');
-              return;
-            }
-
-            const styles = window.getComputedStyle(element);
-            const isRed = styles.backgroundColor === 'rgb(255, 0, 0)' || styles.backgroundColor === 'red';
-            const is100px = styles.width === '100px' && styles.height === '100px';
-
-            if (!is100px) {
-              window.parent.postMessage({ type: 'test-result', success: false, message: 'Het element is geen 100px breed en 100px hoog.' }, '*');
-              return;
-            }
-
-            if (!isRed) {
-              window.parent.postMessage({ type: 'test-result', success: false, message: 'De achtergrondkleur is niet rood.' }, '*');
-              return;
-            }
-
-            window.parent.postMessage({ type: 'test-result', success: true, message: 'Perfect! Je hebt een rood vierkant gemaakt volgens de regels.' }, '*');
-          } catch(e) {
-            window.parent.postMessage({ type: 'test-result', success: false, message: 'Er is een interne scriptfout opgetreden.' }, '*');
-          }
-        }
-        setTimeout(runTest, 100);
-      <\/script>
-    `;
-
-    const iframeDoc = iframeRef.current.contentWindow.document;
-    iframeDoc.open();
-    iframeDoc.write(code + testScript);
-    iframeDoc.close();
-  };
+        // Gebruik simpelweg de prop 'testScript' die we van de database krijgen
+        const iframeDoc = iframeRef.current.contentWindow.document;
+        iframeDoc.open();
+        iframeDoc.write(code + testScript);
+        iframeDoc.close();
+    };
 
   return (
     <div style={styles.container}>
