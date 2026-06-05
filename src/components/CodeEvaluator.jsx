@@ -4,8 +4,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { html } from '@codemirror/lang-html';
 import { EditorView } from '@codemirror/view';
+import { slaVoortgangOp } from '@/app/editor/actions';
 
-export default function CodeEvaluator({ initialCode, testScript }) {
+export default function CodeEvaluator({ initialCode, testScript, opdrachtId }) {
   // We gebruiken nu de initialCode prop uit de database als startwaarde
   const [code, setCode] = useState(initialCode || '');
   const [feedback, setFeedback] = useState({ status: 'idle', message: "Klik op 'Code Uitvoeren' om je oplossing te testen." });
@@ -28,10 +29,11 @@ export default function CodeEvaluator({ initialCode, testScript }) {
   });
 
   useEffect(() => {
-    const handleMessage = (event) => {
+    const handleMessage = async (event) => {
       if (event.data.type === 'test-result') {
         if (event.data.success) {
           setFeedback({ status: 'success', message: `✅ Correct! ${event.data.message}` });
+          await slaVoortgangOp(opdrachtId, true); // Sla de succesvolle voortgang op
         } else {
           setFeedback({ status: 'error', message: `❌ Fout: ${event.data.message}` });
         }
