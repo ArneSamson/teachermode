@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { html } from '@codemirror/lang-html';
+import { EditorView } from '@codemirror/view';
 
 export default function CodeEvaluator({ initialCode, testScript }) {
   // We gebruiken nu de initialCode prop uit de database als startwaarde
@@ -10,6 +11,21 @@ export default function CodeEvaluator({ initialCode, testScript }) {
   const [feedback, setFeedback] = useState({ status: 'idle', message: "Klik op 'Code Uitvoeren' om je oplossing te testen." });
   
   const iframeRef = useRef(null);
+
+  // Deze extensie onderschept het plak-commando in de editor
+  const disablePaste = EditorView.domEventHandlers({
+    paste(event, view) {
+      event.preventDefault(); // Blokkeer het plakken
+      
+      // Gebruik je bestaande feedback-systeem om een waarschuwing te geven
+      setFeedback({ 
+        status: 'error', 
+        message: '❌ Kopiëren en plakken is uitgeschakeld. Probeer de code zelf te typen!' 
+      });
+      
+      return true; // Vertel CodeMirror dat we het event afgehandeld hebben
+    }
+  });
 
   useEffect(() => {
     const handleMessage = (event) => {
@@ -44,7 +60,7 @@ export default function CodeEvaluator({ initialCode, testScript }) {
             value={code}
             height="100%"
             theme="dark"
-            extensions={[html({ selfClosingTags: true, matchClosingTags: true })]}
+            extensions={[html({ selfClosingTags: true, matchClosingTags: true }), disablePaste]}
             onChange={(value) => setCode(value)}
           />
         </div>

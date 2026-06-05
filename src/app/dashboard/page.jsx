@@ -9,7 +9,8 @@ export default async function Dashboard() {
   const { data: opdrachten, error } = await supabase
     .from('opdrachten')
     .select('*')
-    .eq('jaar_niveau', currentUser.jaar_niveau);
+    .eq('jaar_niveau', currentUser.jaar_niveau)
+    .eq('enabled', true);
 
   if (error) {
     console.error(error);
