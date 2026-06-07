@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import HtmlEvaluator from '@/components/HtmlEvaluator';
 import JsEvaluator from '@/components/JsEvaluator';
+import SqlEvaluator from '@/components/SqlEvaluator';
 
 export default async function EditorPage({ params }) {
   const { id } = await params;
@@ -86,6 +87,12 @@ export default async function EditorPage({ params }) {
       
       {opdracht.taal === 'javascript' ? (
         <JsEvaluator 
+          opdrachtId={opdracht.id}
+          initialCode={opdracht.start_code} 
+          testScript={opdracht.test_script} 
+        />
+      ) : opdracht.taal === 'sql' ? (
+        <SqlEvaluator 
           opdrachtId={opdracht.id}
           initialCode={opdracht.start_code} 
           testScript={opdracht.test_script} 
