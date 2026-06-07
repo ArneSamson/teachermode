@@ -1,1 +1,21 @@
 @import "tailwindcss";
+
+/* Styling voor inline code blokjes */
+code {
+  background-color: #f0f0f0; /* Een lichtgrijs achtergrondje */
+  border: 1px solid #dcdcdc; /* Een subtiel randje */
+  border-radius: 4px;        /* Zachte hoekjes */
+  padding: 0.1rem 0.3rem;    /* Wat ademruimte rond de tekst */
+  font-size: 0.9em;          /* Iets kleiner dan normale tekst voor betere leesbaarheid */
+  color: #d63384;            /* Een opvallend kleurtje, passend bij veel tech-stijlen */
+}
+
+/* Voor grotere blokken (zoals <pre> tags die je soms gebruikt) */
+pre {
+  background-color: #282c34; /* Donkere editor-stijl achtergrond */
+  color: #abb2bf;           /* Lichtgrijze tekst */
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;         /* Zorgt dat brede code niet uit het scherm loopt */
+  border: 1px solid #181a1f;
+}
