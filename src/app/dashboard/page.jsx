@@ -162,44 +162,54 @@ export default async function Dashboard({ searchParams }) {
           <div key={jaar} className="mb-8">
             <h2 className="text-xl font-bold mb-4 border-b pb-2 text-gray-700">Oefeningen Jaar {jaar}</h2>
             <div className="grid gap-4">
-              {opdrachtenPerJaar[jaar].map((opdracht) => {
-                const isVoltooid = voltooideOpdrachten.has(opdracht.id);
+              {opdrachtenPerJaar[jaar]
+                .sort((a, b) => a.volgorde - b.volgorde) // Sorteer op volgorde (10, 20, 30)
+                .map((opdracht, index, array) => {
+                  const isVoltooid = voltooideOpdrachten.has(opdracht.id);
+                  
+                  // LOGICA: bepaal of de opdracht vergrendeld is
+                  // 1. Zoek de vorige basisopdracht in deze module
+                  const vorigeBasis = array.slice(0, index).reverse().find(o => !o.is_extra);
+                  
+                  // 2. Een basisopdracht is gelocked als de vorige basisopdracht niet voltooid is
+                  const isBasisGelocked = !opdracht.is_extra && vorigeBasis && !voltooideOpdrachten.has(vorigeBasis.id);
+                  
+                  // 3. Een extra opdracht is gelocked als de bijbehorende basisopdracht nog niet klaar is
+                  const bijbehorendeBasis = array.find(o => o.volgorde === opdracht.volgorde && !o.is_extra);
+                  const isExtraGelocked = opdracht.is_extra && bijbehorendeBasis && !voltooideOpdrachten.has(bijbehorendeBasis.id);
+                  
+                  const isGelocked = isBasisGelocked || isExtraGelocked;
 
-                return (
-                  <div key={opdracht.id} className="border p-5 rounded-lg shadow-sm flex flex-col md:flex-row md:justify-between md:items-center bg-white hover:border-blue-300 transition-colors gap-4">
-                    <div>
-                      <div className="flex items-center gap-3 mb-1">
-                        <h3 className="font-bold text-lg text-gray-800">{opdracht.titel}</h3>
-                        
-                        {isVoltooid && (
-                          <span className="bg-green-100 text-green-800 text-xs px-2.5 py-0.5 rounded-full font-bold border border-green-200 flex items-center gap-1">
-                            <span>✓</span> Voltooid
-                          </span>
-                        )}
-                        {opdracht.is_toets && (
-                          <span className="bg-amber-100 text-amber-800 text-xs px-2.5 py-0.5 rounded-full font-bold border border-amber-200">
-                            📝 Toets
-                          </span>
-                        )}
+                  return (
+                    <div key={opdracht.id} className={`border p-5 rounded-lg shadow-sm flex flex-col md:flex-row md:justify-between md:items-center bg-white transition-colors gap-4 ${isGelocked ? 'opacity-60 bg-gray-50' : 'hover:border-blue-300'}`}>
+                      <div>
+                        <div className="flex items-center gap-3 mb-1">
+                          <h3 className="font-bold text-lg text-gray-800">
+                            {isGelocked ? '🔒 ' : ''} {opdracht.titel}
+                          </h3>
+                          {isVoltooid && (
+                            <span className="bg-green-100 text-green-800 text-xs px-2.5 py-0.5 rounded-full font-bold border border-green-200">✓</span>
+                          )}
+                        </div>
+                        <span className="text-sm text-gray-500 font-medium bg-gray-100 px-2 py-1 rounded">{opdracht.module}</span>
+                        {opdracht.is_extra && <span className="ml-2 text-xs text-purple-600 font-bold italic">Extra Oefening</span>}
                       </div>
-                      <span className="text-sm text-gray-500 font-medium bg-gray-100 px-2 py-1 rounded">{opdracht.module}</span>
+                      
+                      <Link 
+                        href={isGelocked ? '#' : `/editor/${opdracht.id}`}
+                        className={`px-5 py-2.5 rounded font-bold transition-colors text-center ${
+                          isGelocked 
+                            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                            : isVoltooid 
+                              ? 'bg-white text-blue-600 border border-blue-200 hover:bg-blue-50'
+                              : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
+                        }`}
+                      >
+                        {isGelocked ? 'Vergrendeld' : isVoltooid ? 'Herhalen' : 'Start Oefening'}
+                      </Link>
                     </div>
-                    
-                    <Link 
-                      href={`/editor/${opdracht.id}`}
-                      className={`px-5 py-2.5 rounded font-bold transition-colors text-center ${
-                        isVoltooid && opdracht.is_toets
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed border'
-                          : isVoltooid 
-                            ? 'bg-white text-blue-600 border border-blue-200 hover:bg-blue-50'
-                            : 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm'
-                      }`}
-                    >
-                      {isVoltooid ? (opdracht.is_toets ? 'Bekijken gesloten' : 'Herhalen') : 'Start Oefening'}
-                    </Link>
-                  </div>
-                );
-              })}
+                  );
+                })}
             </div>
           </div>
         ))
