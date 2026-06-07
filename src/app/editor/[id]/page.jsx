@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabaseServer';
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
-import CodeEvaluator from '@/components/CodeEvaluator';
+import HtmlEvaluator from '@/components/HtmlEvaluator';
+import JsEvaluator from '@/components/JsEvaluator';
 
 export default async function EditorPage({ params }) {
   const { id } = await params;
@@ -83,11 +84,19 @@ export default async function EditorPage({ params }) {
         )}
       </div>
       
-      <CodeEvaluator 
-        opdrachtId={opdracht.id}
-        initialCode={opdracht.start_code} 
-        testScript={opdracht.test_script} 
-      /> 
+      {opdracht.taal === 'javascript' ? (
+        <JsEvaluator 
+          opdrachtId={opdracht.id}
+          initialCode={opdracht.start_code} 
+          testScript={opdracht.test_script} 
+        />
+      ) : (
+        <HtmlEvaluator 
+          opdrachtId={opdracht.id}
+          initialCode={opdracht.start_code} 
+          testScript={opdracht.test_script} 
+        />
+      )}
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { html } from '@codemirror/lang-html';
 import { EditorView } from '@codemirror/view';
 import { slaVoortgangOp } from '@/app/editor/actions';
 
-export default function CodeEvaluator({ initialCode, testScript, opdrachtId }) {
+export default function HtmlEvaluator({ initialCode, testScript, opdrachtId }) {
   // We gebruiken nu de initialCode prop uit de database als startwaarde
   const [code, setCode] = useState(initialCode || '');
   const [feedback, setFeedback] = useState({ status: 'idle', message: "Klik op 'Code Uitvoeren' om je oplossing te testen." });

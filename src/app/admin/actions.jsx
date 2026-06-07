@@ -80,3 +80,39 @@ export async function resetVoortgang(profielId, opdrachtId) {
 
   revalidatePath('/admin');
 }
+
+// 4. Een nieuwe klas/groep aanmaken
+export async function maakKlasAan(formData) {
+  const naam = formData.get('naam');
+  if (!naam) return;
+
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: profiel } = await supabase.from('profielen').select('rol').eq('id', user?.id).single();
+  if (profiel?.rol !== 'leerkracht') throw new Error('Niet geautoriseerd');
+
+  await supabase.from('klassen').insert({ naam });
+  
+  revalidatePath('/admin');
+}
+
+// 5. Een leerling aan een klas koppelen (of eruit halen)
+export async function updateLeerlingKlas(profielId, formData) {
+  // Haal de gekozen klasId uit de dropdown. Als het 'geen' is, zetten we het op null.
+  let klasId = formData.get('klas_id');
+  if (klasId === 'geen') klasId = null;
+
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: profiel } = await supabase.from('profielen').select('rol').eq('id', user?.id).single();
+  if (profiel?.rol !== 'leerkracht') throw new Error('Niet geautoriseerd');
+
+  await supabase
+    .from('profielen')
+    .update({ klas_id: klasId })
+    .eq('id', profielId);
+
+  revalidatePath('/admin');
+}

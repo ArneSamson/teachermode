@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabaseServer';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { toggleOpdrachtStatus, forceerVoltooid, resetVoortgang } from './actions';
+import { toggleOpdrachtStatus, forceerVoltooid, resetVoortgang, maakKlasAan, updateLeerlingKlas } from './actions';
 
 export default async function AdminDashboard({ searchParams }) {
   const supabase = await createClient();
@@ -46,6 +46,11 @@ export default async function AdminDashboard({ searchParams }) {
     .from('voortgang')
     .select('*');
 
+  const { data: klassen } = await supabase
+    .from('klassen')
+    .select('*')
+    .order('naam', { ascending: true });
+
   // Hulpopdracht
   const geefVoortgangStatus = (leerlingId, opdrachtId) => {
     const match = alleVoortgang?.find(v => v.profiel_id === leerlingId && v.opdracht_id === opdrachtId);
@@ -83,6 +88,12 @@ export default async function AdminDashboard({ searchParams }) {
           className={`px-4 py-2 rounded-t font-bold ${activeTab === 'opdracht' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
         >
           Overzicht per Opdracht
+        </Link>
+        <Link 
+          href="?tab=klassen" 
+          className={`px-4 py-2 rounded-t font-bold ${activeTab === 'klassen' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+        >
+          Klas- & Projectbeheer
         </Link>
       </div>
 
@@ -240,6 +251,87 @@ export default async function AdminDashboard({ searchParams }) {
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* CONTENT TAB 4: KLASBEHEER */}
+      {activeTab === 'klassen' && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          {/* Kolom 1: Klassen Aanmaken */}
+          <div className="bg-white p-6 rounded shadow-sm border h-fit">
+            <h2 className="text-xl font-bold mb-4 text-gray-700">Nieuwe Groep</h2>
+            <form action={maakKlasAan} className="flex flex-col gap-3">
+              <input 
+                type="text" 
+                name="naam" 
+                placeholder="Bv. SDG+ Rotatie 2" 
+                required
+                className="border p-2 rounded focus:outline-blue-500"
+              />
+              <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700">
+                + Aanmaken
+              </button>
+            </form>
+
+            <h3 className="font-bold text-gray-700 mt-8 border-b pb-2 mb-3">Bestaande Groepen</h3>
+            <ul className="divide-y text-sm">
+              {klassen?.length === 0 && <li className="text-gray-500 italic py-2">Nog geen groepen.</li>}
+              {klassen?.map(klas => (
+                <li key={klas.id} className="py-2 flex justify-between items-center">
+                  <span className="font-semibold">{klas.naam}</span>
+                  <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">
+                    {leerlingen?.filter(l => l.klas_id === klas.id).length} lln
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Kolom 2 & 3: Leerlingen Toewijzen */}
+          <div className="md:col-span-2 bg-white p-6 rounded shadow-sm border">
+            <h2 className="text-xl font-bold mb-4 text-gray-700">Leerlingen Indelen</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="bg-gray-100 text-gray-600">
+                    <th className="p-3">Naam</th>
+                    <th className="p-3">Jaar</th>
+                    <th className="p-3">Huidige Groep</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y text-gray-700">
+                  {leerlingen?.map(leerling => (
+                    <tr key={leerling.id} className="hover:bg-gray-50">
+                      <td className="p-3 font-semibold">{leerling.naam}</td>
+                      <td className="p-3">{leerling.jaar_niveau}e</td>
+                      <td className="p-3">
+                        <form action={updateLeerlingKlas.bind(null, leerling.id)} className="flex items-center gap-2">
+                          <select 
+                            name="klas_id" 
+                            defaultValue={leerling.klas_id || 'geen'}
+                            className="border p-1.5 rounded bg-white text-sm w-full max-w-[150px]"
+                          >
+                            <option value="geen">-- Geen groep --</option>
+                            {klassen?.map(klas => (
+                              <option key={klas.id} value={klas.id}>{klas.naam}</option>
+                            ))}
+                          </select>
+                          <button 
+                            type="submit" 
+                            className="bg-blue-100 hover:bg-blue-200 text-blue-800 border border-blue-300 px-3 py-1.5 rounded text-xs font-bold transition-colors"
+                          >
+                            Opslaan
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
         </div>
       )}
 
