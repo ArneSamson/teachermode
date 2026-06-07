@@ -8,7 +8,7 @@ import { slaVoortgangOp } from '@/app/editor/actions';
 
 export default function HtmlEvaluator({ initialCode, testScript, opdrachtId }) {
   const [code, setCode] = useState(initialCode || '');
-  const [feedback, setFeedback] = useState({ status: 'idle', message: "Klik op 'Code Uitvoeren' om je oplossing te testen." });
+  const [feedback, setFeedback] = useState({ status: 'idle', message: "Klik op 'Code uitvoeren' om je oplossing te testen." });
   
   const iframeRef = useRef(null);
 
@@ -108,7 +108,7 @@ export default function HtmlEvaluator({ initialCode, testScript, opdrachtId }) {
         
         <div style={styles.outputPanel}>
           <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-             <button onClick={handleRunAndTest} style={styles.button}>Code Uitvoeren & Testen</button>
+             <button onClick={handleRunAndTest} style={styles.button}>Code uitvoeren en testen</button>
           </div>
           <iframe 
             ref={iframeRef} 

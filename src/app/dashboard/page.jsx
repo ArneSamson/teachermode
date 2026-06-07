@@ -129,7 +129,7 @@ export default async function Dashboard({ searchParams }) {
         <div className="mb-10 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <div className="flex justify-between items-end mb-3">
             <div>
-              <h2 className="text-lg font-bold text-gray-800">Jouw Voortgang in {TAAL_LABELS[activeTab]}</h2>
+              <h2 className="text-lg font-bold text-gray-800">Jouw voortgang in {TAAL_LABELS[activeTab]}</h2>
               <p className="text-sm text-gray-500">
                 {voltooideTabAantal} van de {totaalTabOpdrachten} opdrachten afgerond
               </p>
@@ -160,7 +160,7 @@ export default async function Dashboard({ searchParams }) {
       ) : (
         Object.keys(opdrachtenPerJaar).sort((a, b) => b - a).map((jaar) => (
           <div key={jaar} className="mb-8">
-            <h2 className="text-xl font-bold mb-4 border-b pb-2 text-gray-700">Oefeningen Jaar {jaar}</h2>
+            <h2 className="text-xl font-bold mb-4 border-b pb-2 text-gray-700">Oefeningen {jaar}e jaar</h2>
             <div className="grid gap-4">
               {opdrachtenPerJaar[jaar]
                 .sort((a, b) => a.volgorde - b.volgorde) // Sorteer op volgorde (10, 20, 30)
