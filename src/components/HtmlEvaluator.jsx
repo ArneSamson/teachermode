@@ -7,24 +7,21 @@ import { EditorView } from '@codemirror/view';
 import { slaVoortgangOp } from '@/app/editor/actions';
 
 export default function HtmlEvaluator({ initialCode, testScript, opdrachtId }) {
-  // We gebruiken nu de initialCode prop uit de database als startwaarde
   const [code, setCode] = useState(initialCode || '');
   const [feedback, setFeedback] = useState({ status: 'idle', message: "Klik op 'Code Uitvoeren' om je oplossing te testen." });
   
   const iframeRef = useRef(null);
 
-  // Deze extensie onderschept het plak-commando in de editor
   const disablePaste = EditorView.domEventHandlers({
     paste(event, view) {
-      event.preventDefault(); // Blokkeer het plakken
+      event.preventDefault(); 
       
-      // Gebruik je bestaande feedback-systeem om een waarschuwing te geven
       setFeedback({ 
         status: 'error', 
         message: '❌ Kopiëren en plakken is uitgeschakeld. Probeer de code zelf te typen!' 
       });
       
-      return true; // Vertel CodeMirror dat we het event afgehandeld hebben
+      return true; 
     }
   });
 
@@ -33,7 +30,7 @@ export default function HtmlEvaluator({ initialCode, testScript, opdrachtId }) {
       if (event.data.type === 'test-result') {
         if (event.data.success) {
           setFeedback({ status: 'success', message: `✅ Correct! ${event.data.message}` });
-          await slaVoortgangOp(opdrachtId, true); // Sla de succesvolle voortgang op
+          await slaVoortgangOp(opdrachtId, true);
         } else {
           setFeedback({ status: 'error', message: `❌ Fout: ${event.data.message}` });
         }
@@ -44,27 +41,69 @@ export default function HtmlEvaluator({ initialCode, testScript, opdrachtId }) {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-    const handleRunAndTest = () => {
-        setFeedback({ status: 'testing', message: 'Aan het testen...' });
+  const handleRunAndTest = () => {
+    setFeedback({ status: 'testing', message: 'Aan het testen...' });
+    const iframeDoc = iframeRef.current.contentWindow.document;
+    iframeDoc.open();
 
-        // Gebruik simpelweg de prop 'testScript' die we van de database krijgen
-        const iframeDoc = iframeRef.current.contentWindow.document;
-        iframeDoc.open();
-        iframeDoc.write(code + testScript);
-        iframeDoc.close();
-    };
+    const isOudFormat = testScript.includes('<script') || testScript.includes('window.parent.postMessage');
+
+    let scriptInjectie = '';
+
+    if (isOudFormat) {
+      scriptInjectie = testScript; 
+    } else {
+      scriptInjectie = `
+        <script>
+          window.onerror = function(msg) {
+            window.parent.postMessage({ type: 'test-result', success: false, message: msg }, '*');
+          };
+          
+          setTimeout(() => {
+            try {
+              ${testScript}
+              window.parent.postMessage({ type: 'test-result', success: true, message: 'Alle tests geslaagd!' }, '*');
+            } catch (e) {
+              window.parent.postMessage({ type: 'test-result', success: false, message: e.message }, '*');
+            }
+          }, 50);
+        </script>
+      `;
+    }
+
+    iframeDoc.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>body { font-family: sans-serif; }</style>
+        </head>
+        <body>
+          ${code}
+          
+          </script></style></textarea></div>
+          
+          ${scriptInjectie}
+        </body>
+      </html>
+    `);
+    iframeDoc.close();
+  };
 
   return (
     <div style={styles.container}>
       <div style={styles.workspace}>
         <div style={styles.editorPanel}>
-          <CodeMirror
-            value={code}
-            height="100%"
-            theme="dark"
-            extensions={[html({ selfClosingTags: true, matchClosingTags: true }), disablePaste]}
-            onChange={(value) => setCode(value)}
-          />
+          {/* Deze div wrapper forceert het scrol-gedrag */}
+          <div style={{ flex: 1, overflow: 'auto', height: '100%' }}>
+            <CodeMirror
+              value={code}
+              height="100%"
+              style={{ minHeight: '100%' }}
+              theme="dark"
+              extensions={[html({ selfClosingTags: true, matchClosingTags: true }), disablePaste]}
+              onChange={(value) => setCode(value)}
+            />
+          </div>
         </div>
         
         <div style={styles.outputPanel}>
@@ -93,7 +132,7 @@ const styles = {
     padding: '10px 20px', fontSize: '16px', borderRadius: '4px', cursor: 'pointer', width: '100%'
   },
   workspace: { display: 'flex', gap: '20px', height: '500px' },
-  editorPanel: { flex: 1, borderRadius: '8px', overflow: 'hidden', border: '1px solid #ccc', backgroundColor: '#282c34' },
+  editorPanel: { flex: 1, borderRadius: '8px', overflow: 'hidden', border: '1px solid #ccc', backgroundColor: '#282c34', display: 'flex', flexDirection: 'column' },
   outputPanel: { flex: 1, display: 'flex', flexDirection: 'column' },
   iframe: { flex: 1, border: '1px solid #ccc', borderRadius: '8px', backgroundColor: '#fff', marginBottom: '10px' },
   feedbackBox: { padding: '15px', borderRadius: '8px', fontWeight: 'bold', transition: 'all 0.2s ease' },
