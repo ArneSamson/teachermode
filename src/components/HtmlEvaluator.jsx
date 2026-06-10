@@ -41,6 +41,13 @@ export default function HtmlEvaluator({ initialCode, testScript, opdrachtId }) {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
+  const handleReset = () => {
+    if (window.confirm("Weet je zeker dat je de code wilt resetten? Al je huidige werk voor deze oefening gaat verloren.")) {
+      setCode(initialCode || '');
+      setFeedback({ status: 'idle', message: "Code succesvol gereset naar de startwaarde." });
+    }
+  };
+
   const handleRunAndTest = () => {
     setFeedback({ status: 'testing', message: 'Aan het testen...' });
     const iframeDoc = iframeRef.current.contentWindow.document;
@@ -108,7 +115,8 @@ export default function HtmlEvaluator({ initialCode, testScript, opdrachtId }) {
         
         <div style={styles.outputPanel}>
           <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-             <button onClick={handleRunAndTest} style={styles.button}>Code uitvoeren en testen</button>
+             <button onClick={handleRunAndTest} style={styles.button}>▶ Query Uitvoeren & Testen</button>
+             <button onClick={handleReset} style={styles.resetButton}>↻ Reset Code</button>
           </div>
           <iframe 
             ref={iframeRef} 
@@ -139,5 +147,9 @@ const styles = {
   idle: { backgroundColor: '#e9ecef', color: '#495057', border: '1px solid #ced4da' },
   testing: { backgroundColor: '#fff3cd', color: '#856404', border: '1px solid #ffeeba' },
   success: { backgroundColor: '#d4edda', color: '#155724', border: '1px solid #c3e6cb' },
-  error: { backgroundColor: '#f8d7da', color: '#721c24', border: '1px solid #f5c6cb' }
+  error: { backgroundColor: '#f8d7da', color: '#721c24', border: '1px solid #f5c6cb' },
+  resetButton: {
+    backgroundColor: '#dc3545', color: 'white', border: 'none',
+    padding: '10px 15px', fontSize: '14px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold'
+  },
 };
