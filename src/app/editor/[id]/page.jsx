@@ -22,16 +22,44 @@ export default async function EditorPage({ params }) {
 
   if (error || !opdracht) return notFound();
 
-  // 3. Haal de persoonlijke voortgang op
-  const { data: voortgang } = await supabase
+  // 3. Haal ALLE voltooide opdrachten op voor deze leerling
+  const { data: voortgangLijst } = await supabase
     .from('voortgang')
-    .select('status')
-    .eq('opdracht_id', id)
+    .select('opdracht_id')
     .eq('profiel_id', user.id)
-    .single();
+    .eq('status', 'voltooid');
 
-  // 4. Blokkeer als het een toets is die al voltooid is
-  if (opdracht.is_toets && voortgang?.status === 'voltooid') {
+  const voltooideIds = new Set(voortgangLijst?.map(v => v.opdracht_id) || []);
+
+  // 4. BEVEILIGING: Is deze opdracht vergrendeld?
+  // We halen enkel de opdrachten van DEZELFDE TAAL en HETZELFDE JAAR op
+  // We sorteren aflopend (descending) zodat de eerste die we vinden met een lagere volgorde direct de 'vorige' is.
+  const { data: moduleOpdrachten } = await supabase
+    .from('opdrachten')
+    .select('id, volgorde, is_extra')
+    .eq('taal', opdracht.taal)
+    .eq('jaar_niveau', opdracht.jaar_niveau)
+    .order('volgorde', { ascending: false });
+
+  const isVoltooid = voltooideIds.has(id);
+  
+  // Zoek de onmiddellijk voorafgaande basisopdracht (omdat de lijst aflopend is, is de eerste hit de juiste)
+  const vorigeBasis = moduleOpdrachten?.find(o => o.volgorde < opdracht.volgorde && !o.is_extra);
+  
+  // Zoek de basisopdracht die bij een extra opdracht hoort
+  const bijbehorendeBasis = moduleOpdrachten?.find(o => o.volgorde === opdracht.volgorde && !o.is_extra);
+
+  const isGelocked = 
+    (!opdracht.is_extra && vorigeBasis && !voltooideIds.has(vorigeBasis.id)) ||
+    (opdracht.is_extra && bijbehorendeBasis && !voltooideIds.has(bijbehorendeBasis.id));
+
+  // Als de leerling probeert te 'smokkelen' via de URL -> stuur terug naar dashboard
+  if (isGelocked && !isVoltooid) {
+    redirect('/dashboard');
+  }
+
+  // 5. Blokkeer als het een toets is die al voltooid is
+  if (opdracht.is_toets && isVoltooid) {
     return (
       <div className="p-8 max-w-6xl mx-auto">
         <Link href="/dashboard" className="text-blue-600 hover:underline mb-4 inline-block">
@@ -78,7 +106,7 @@ export default async function EditorPage({ params }) {
           />
         </div>
         {/* Visuele feedback voor gewone oefeningen die al af zijn */}
-        {!opdracht.is_toets && voortgang?.status === 'voltooid' && (
+        {!opdracht.is_toets && isVoltooid && (
           <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-bold border border-green-300">
             ✓ Voltooid (Je mag blijven oefenen)
           </span>
