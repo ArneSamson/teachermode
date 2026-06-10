@@ -5,20 +5,18 @@ import { revalidatePath } from 'next/cache';
 
 // 1. Opdracht aan- of uitzetten
 export async function toggleOpdrachtStatus(opdrachtId, huidigEnabled) {
-    console.log("➔ Server Action 'toggleOpdrachtStatus' succesvol aangeroepen voor ID:", opdrachtId);
+  console.log("➔ Server Action 'toggleOpdrachtStatus' succesvol aangeroepen voor ID:", opdrachtId);
   const supabase = await createClient();
   
   const { data: { user } } = await supabase.auth.getUser();
   const { data: profiel } = await supabase.from('profielen').select('rol').eq('id', user?.id).single();
   if (profiel?.rol !== 'leerkracht') throw new Error('Niet geautoriseerd');
 
-  // Vang hier de error op van de update
   const { error } = await supabase
     .from('opdrachten')
     .update({ enabled: !huidigEnabled })
     .eq('id', opdrachtId);
 
-  // Als er een database-fout is, loggen we die direct in de terminal
   if (error) {
     console.error("❌ Supabase Error bij toggelen opdracht:", error.message);
     return { error: error.message };
@@ -37,7 +35,6 @@ export async function forceerVoltooid(profielId, opdrachtId) {
   const { data: profiel } = await supabase.from('profielen').select('rol').eq('id', user?.id).single();
   if (profiel?.rol !== 'leerkracht') throw new Error('Niet geautoriseerd');
 
-  // Check of er al een record bestaat
   const { data: bestaand } = await supabase
     .from('voortgang')
     .select('id')
@@ -60,7 +57,6 @@ export async function forceerVoltooid(profielId, opdrachtId) {
         eind_tijdstip: new Date().toISOString()
       });
   }
-
   revalidatePath('/admin');
 }
 
@@ -93,13 +89,11 @@ export async function maakKlasAan(formData) {
   if (profiel?.rol !== 'leerkracht') throw new Error('Niet geautoriseerd');
 
   await supabase.from('klassen').insert({ naam });
-  
   revalidatePath('/admin');
 }
 
 // 5. Een leerling aan een klas koppelen (of eruit halen)
 export async function updateLeerlingKlas(profielId, formData) {
-  // Haal de gekozen klasId uit de dropdown. Als het 'geen' is, zetten we het op null.
   let klasId = formData.get('klas_id');
   if (klasId === 'geen') klasId = null;
 
@@ -115,4 +109,52 @@ export async function updateLeerlingKlas(profielId, formData) {
     .eq('id', profielId);
 
   revalidatePath('/admin');
+}
+
+// 6. CMS: Nieuwe opdracht aanmaken
+export async function maakOpdrachtAan(formData) {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: profiel } = await supabase.from('profielen').select('rol').eq('id', user?.id).single();
+  if (profiel?.rol !== 'leerkracht') throw new Error('Niet geautoriseerd');
+
+  const nieuweOpdracht = {
+    titel: formData.get('titel'),
+    uitleg: formData.get('uitleg'),
+    module: formData.get('module'),
+    jaar_niveau: parseInt(formData.get('jaar_niveau')),
+    taal: formData.get('taal'),
+    volgorde: parseInt(formData.get('volgorde')) || 0,
+    is_toets: formData.get('is_toets') === 'on',
+    is_extra: formData.get('is_extra') === 'on',
+    enkel_schooluren: formData.get('enkel_schooluren') === 'on',
+    start_code: formData.get('start_code') || '',
+    test_script: formData.get('test_script') || '',
+    enabled: true // Standaard direct zichtbaar
+  };
+
+  const { error } = await supabase.from('opdrachten').insert(nieuweOpdracht);
+  
+  if (error) {
+    console.error("❌ Fout bij aanmaken opdracht:", error.message);
+    throw new Error("Fout bij opslaan: " + error.message);
+  }
+
+  revalidatePath('/admin');
+  revalidatePath('/dashboard');
+}
+
+// 7. CMS: Opdracht verwijderen
+export async function verwijderOpdracht(opdrachtId) {
+  const supabase = await createClient();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: profiel } = await supabase.from('profielen').select('rol').eq('id', user?.id).single();
+  if (profiel?.rol !== 'leerkracht') throw new Error('Niet geautoriseerd');
+
+  await supabase.from('opdrachten').delete().eq('id', opdrachtId);
+  
+  revalidatePath('/admin');
+  revalidatePath('/dashboard');
 }

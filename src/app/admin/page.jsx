@@ -1,12 +1,20 @@
 import { createClient } from '@/lib/supabaseServer';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { toggleOpdrachtStatus, forceerVoltooid, resetVoortgang, maakKlasAan, updateLeerlingKlas } from './actions';
+import { 
+  toggleOpdrachtStatus, 
+  forceerVoltooid, 
+  resetVoortgang, 
+  maakKlasAan, 
+  updateLeerlingKlas,
+  maakOpdrachtAan,
+  verwijderOpdracht
+} from './actions';
+import VerwijderKnop from '@/components/VerwijderKnop';
 
 export default async function AdminDashboard({ searchParams }) {
   const supabase = await createClient();
   
-  // Lees uit welk tabblad actief is (standaard 'beheer')
   const resolvedParams = await searchParams;
   const activeTab = resolvedParams.tab || 'beheer';
 
@@ -33,7 +41,7 @@ export default async function AdminDashboard({ searchParams }) {
     .from('opdrachten')
     .select('*')
     .order('jaar_niveau', { ascending: true })
-    .order('titel', { ascending: true });
+    .order('volgorde', { ascending: true }); // Aangepast naar sorteren op volgorde
 
   const { data: leerlingen } = await supabase
     .from('profielen')
@@ -51,7 +59,6 @@ export default async function AdminDashboard({ searchParams }) {
     .select('*')
     .order('naam', { ascending: true });
 
-  // Hulpopdracht
   const geefVoortgangStatus = (leerlingId, opdrachtId) => {
     const match = alleVoortgang?.find(v => v.profiel_id === leerlingId && v.opdracht_id === opdrachtId);
     return match ? match.status : 'niet_gestart';
@@ -70,24 +77,30 @@ export default async function AdminDashboard({ searchParams }) {
       </div>
 
       {/* TABBLADEN NAVIGATIE */}
-      <div className="flex gap-2 mb-6 border-b pb-2">
+      <div className="flex flex-wrap gap-2 mb-6 border-b pb-2">
         <Link 
           href="?tab=beheer" 
           className={`px-4 py-2 rounded-t font-bold ${activeTab === 'beheer' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
         >
-          Opdrachten Beheer
+          Opdrachten Overzicht
+        </Link>
+        <Link 
+          href="?tab=cms" 
+          className={`px-4 py-2 rounded-t font-bold ${activeTab === 'cms' ? 'bg-emerald-600 text-white' : 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'}`}
+        >
+          + Nieuwe Opdracht Maken
         </Link>
         <Link 
           href="?tab=leerling" 
           className={`px-4 py-2 rounded-t font-bold ${activeTab === 'leerling' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
         >
-          Overzicht per Leerling
+          Voortgang per Leerling
         </Link>
         <Link 
           href="?tab=opdracht" 
           className={`px-4 py-2 rounded-t font-bold ${activeTab === 'opdracht' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
         >
-          Overzicht per Opdracht
+          Voortgang per Opdracht
         </Link>
         <Link 
           href="?tab=klassen" 
@@ -97,37 +110,43 @@ export default async function AdminDashboard({ searchParams }) {
         </Link>
       </div>
 
-      {/* CONTENT TAB 1: BEHEER */}
+      {/* CONTENT TAB 1: BEHEER (Nu met Verwijder-knop) */}
       {activeTab === 'beheer' && (
         <div className="bg-white p-6 rounded shadow-sm border">
-          <h2 className="text-xl font-bold mb-4 text-gray-700">Oefeningen & Toetsen In/Uitschakelen</h2>
+          <h2 className="text-xl font-bold mb-4 text-gray-700">Bestaande Oefeningen & Toetsen</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-100 text-gray-600 text-sm font-semibold">
                   <th className="p-3">Jaar</th>
+                  <th className="p-3">Volgorde</th>
                   <th className="p-3">Titel</th>
-                  <th className="p-3">Module</th>
-                  <th className="p-3 text-center">Status</th>
+                  <th className="p-3">Module (Taal)</th>
+                  <th className="p-3 text-center">Zichtbaarheid</th>
+                  <th className="p-3 text-center">Acties</th>
                 </tr>
               </thead>
               <tbody className="divide-y text-gray-700">
                 {opdrachten?.map((opdracht) => (
                   <tr key={opdracht.id} className="hover:bg-gray-50">
                     <td className="p-3 font-medium">{opdracht.jaar_niveau}e</td>
+                    <td className="p-3 text-sm text-gray-500">{opdracht.volgorde} {opdracht.is_extra && '(Extra)'}</td>
                     <td className="p-3 font-semibold">{opdracht.titel} {opdracht.is_toets && '📝'}</td>
-                    <td className="p-3 text-sm text-gray-500">{opdracht.module}</td>
+                    <td className="p-3 text-sm text-gray-500">{opdracht.module} <span className="uppercase text-xs bg-gray-200 px-1 rounded ml-1">{opdracht.taal}</span></td>
                     <td className="p-3 text-center">
                       <form action={toggleOpdrachtStatus.bind(null, opdracht.id, opdracht.enabled)}>
                         <button 
                           type="submit"
                           className={`px-4 py-1.5 rounded-full text-xs font-bold transition-colors shadow-sm ${
-                            opdracht.enabled ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-red-500 text-white hover:bg-red-600'
+                            opdracht.enabled ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-400 text-white hover:bg-gray-500'
                           }`}
                         >
                           {opdracht.enabled ? '✓ Zichtbaar' : '✕ Verborgen'}
                         </button>
                       </form>
+                    </td>
+                    <td className="p-3 text-center">
+                      <VerwijderKnop id={opdracht.id} />
                     </td>
                   </tr>
                 ))}
@@ -137,15 +156,127 @@ export default async function AdminDashboard({ searchParams }) {
         </div>
       )}
 
+      {/* CONTENT TAB: CMS (Nieuwe Opdracht) */}
+      {activeTab === 'cms' && (
+        <div className="bg-white p-6 rounded shadow-sm border">
+          <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">Een Nieuwe Opdracht Toevoegen</h2>
+          
+          <form action={maakOpdrachtAan} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              {/* Kolom 1: Basis Info */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Titel van de opdracht</label>
+                  <input type="text" name="titel" required className="w-full border p-2 rounded bg-gray-50 focus:bg-white" placeholder="Bv: 1. De Productkaart" />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Module / Thema</label>
+                  <input type="text" name="module" required className="w-full border p-2 rounded bg-gray-50 focus:bg-white" placeholder="Bv: HTML Basis" />
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Leerjaar</label>
+                    <select name="jaar_niveau" className="w-full border p-2 rounded bg-gray-50 focus:bg-white">
+                      <option value="1">1e jaar</option>
+                      <option value="2">2e jaar</option>
+                      <option value="3">3e jaar</option>
+                      <option value="4">4e jaar</option>
+                      <option value="5" defaultValue={true}>5e jaar</option>
+                      <option value="6">6e jaar</option>
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Programmeertaal</label>
+                    <select name="taal" className="w-full border p-2 rounded bg-gray-50 focus:bg-white">
+                      <option value="html">HTML & CSS</option>
+                      <option value="javascript">JavaScript</option>
+                      <option value="sql">SQL Databases</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Volgorde (Bepaalt de positie)</label>
+                  <input type="number" name="volgorde" required className="w-full border p-2 rounded bg-gray-50 focus:bg-white" placeholder="Bv: 10, 20, 30..." />
+                  <p className="text-xs text-gray-500 mt-1">Houd stappen van 10 aan, zodat je later oefeningen ertussen kan schuiven (bv. 15).</p>
+                </div>
+              </div>
+
+              {/* Kolom 2: Instellingen & Uitleg */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Uitleg (HTML toegestaan)</label>
+                  <textarea 
+                    name="uitleg" 
+                    required 
+                    rows="4" 
+                    className="w-full border p-2 rounded bg-gray-50 focus:bg-white font-mono text-sm" 
+                    placeholder="Typ de uitleg hier... Gebruik <code>...</code> voor code-woorden."
+                  ></textarea>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded border grid grid-cols-2 gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="is_extra" className="w-4 h-4 text-purple-600" />
+                    <span className="text-sm font-semibold">Dit is een Extra (zijpad) oefening</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="is_toets" className="w-4 h-4 text-amber-600" />
+                    <span className="text-sm font-semibold text-amber-800">Dit is een Toets</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer col-span-2">
+                    <input type="checkbox" name="enkel_schooluren" className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm font-semibold">Enkel toegankelijk tijdens schooluren (08:00 - 16:00)</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Code Velden */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 border-t pt-6">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Start Code (Wat de leerling ziet)</label>
+                <textarea 
+                  name="start_code" 
+                  rows="8" 
+                  className="w-full border p-3 rounded bg-[#282c34] text-[#abb2bf] font-mono text-sm focus:outline-blue-500" 
+                  placeholder=""
+                ></textarea>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Test Script (Jouw Javascript Validatie)</label>
+                <textarea 
+                  name="test_script" 
+                  rows="8" 
+                  className="w-full border p-3 rounded bg-[#1e1e1e] text-[#d4d4d4] font-mono text-sm focus:outline-emerald-500" 
+                  placeholder="// Typ hier de logica met 'throw new Error()'"
+                ></textarea>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-4">
+              <button type="submit" className="bg-emerald-600 text-white px-8 py-3 rounded font-bold hover:bg-emerald-700 shadow-md text-lg transition-transform active:scale-95">
+                💾 Opdracht Opslaan in Database
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
       {/* CONTENT TAB 2: PER LEERLING */}
       {activeTab === 'leerling' && (
+        /* ... Bestaande Leerling Code ... */
         <div className="bg-white p-6 rounded shadow-sm border">
+          {/* De rest is ongewijzigd gebleven uit je snippet */}
           <h2 className="text-xl font-bold mb-4 text-gray-700">Voortgang per Leerling</h2>
           <div className="grid gap-3">
             {leerlingen?.map((leerling) => {
               const relevanteOpdrachten = opdrachten.filter(o => o.jaar_niveau <= leerling.jaar_niveau);
               const voltooideAantal = relevanteOpdrachten.filter(o => geefVoortgangStatus(leerling.id, o.id) === 'voltooid').length;
-
               return (
                 <details key={leerling.id} className="group border rounded-lg bg-gray-50 overflow-hidden">
                   <summary className="flex justify-between items-center p-4 cursor-pointer font-bold text-gray-800 bg-white hover:bg-gray-50 transition-colors">
@@ -157,7 +288,6 @@ export default async function AdminDashboard({ searchParams }) {
                       {voltooideAantal} / {relevanteOpdrachten.length} voltooid
                     </span>
                   </summary>
-                  
                   <div className="p-4 bg-white border-t">
                     <table className="w-full text-left text-sm">
                       <tbody className="divide-y text-gray-700">
@@ -197,13 +327,13 @@ export default async function AdminDashboard({ searchParams }) {
 
       {/* CONTENT TAB 3: PER OPDRACHT */}
       {activeTab === 'opdracht' && (
+        /* ... Bestaande Opdracht Code ... */
         <div className="bg-white p-6 rounded shadow-sm border">
           <h2 className="text-xl font-bold mb-4 text-gray-700">Voortgang per Opdracht</h2>
           <div className="grid gap-3">
             {opdrachten?.map((opdracht) => {
               const relevanteLeerlingen = leerlingen.filter(l => l.jaar_niveau >= opdracht.jaar_niveau);
               const voltooideAantal = relevanteLeerlingen.filter(l => geefVoortgangStatus(l.id, opdracht.id) === 'voltooid').length;
-
               return (
                 <details key={opdracht.id} className="group border rounded-lg bg-gray-50 overflow-hidden">
                   <summary className="flex justify-between items-center p-4 cursor-pointer font-bold text-gray-800 bg-white hover:bg-gray-50 transition-colors">
@@ -215,7 +345,6 @@ export default async function AdminDashboard({ searchParams }) {
                       {voltooideAantal} / {relevanteLeerlingen.length} leerlingen klaar
                     </span>
                   </summary>
-                  
                   <div className="p-4 bg-white border-t">
                     <table className="w-full text-left text-sm">
                       <tbody className="divide-y text-gray-700">
@@ -257,8 +386,6 @@ export default async function AdminDashboard({ searchParams }) {
       {/* CONTENT TAB 4: KLASBEHEER */}
       {activeTab === 'klassen' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
-          {/* Kolom 1: Klassen Aanmaken */}
           <div className="bg-white p-6 rounded shadow-sm border h-fit">
             <h2 className="text-xl font-bold mb-4 text-gray-700">Nieuwe Groep</h2>
             <form action={maakKlasAan} className="flex flex-col gap-3">
@@ -273,7 +400,6 @@ export default async function AdminDashboard({ searchParams }) {
                 + Aanmaken
               </button>
             </form>
-
             <h3 className="font-bold text-gray-700 mt-8 border-b pb-2 mb-3">Bestaande Groepen</h3>
             <ul className="divide-y text-sm">
               {klassen?.length === 0 && <li className="text-gray-500 italic py-2">Nog geen groepen.</li>}
@@ -287,8 +413,6 @@ export default async function AdminDashboard({ searchParams }) {
               ))}
             </ul>
           </div>
-
-          {/* Kolom 2 & 3: Leerlingen Toewijzen */}
           <div className="md:col-span-2 bg-white p-6 rounded shadow-sm border">
             <h2 className="text-xl font-bold mb-4 text-gray-700">Leerlingen Indelen</h2>
             <div className="overflow-x-auto">
@@ -331,10 +455,8 @@ export default async function AdminDashboard({ searchParams }) {
               </table>
             </div>
           </div>
-          
         </div>
       )}
-
     </div>
   );
 }
