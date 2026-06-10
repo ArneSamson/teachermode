@@ -88,18 +88,32 @@ export default async function Dashboard({ searchParams }) {
   return (
     <div className="p-8 max-w-4xl mx-auto">
       {/* Header & Uitloggen */}
-      <div className="flex justify-between items-center mb-8">
+      {/* Header & Uitloggen */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-800 mb-1">Welkom, {profiel.naam}</h1>
           <p className="text-gray-600">
             Ingelogd als {profiel.rol === 'leerkracht' ? 'Leerkracht' : `Leerling (${profiel.jaar_niveau}e jaar)`}
           </p>
         </div>
-        <form action="/auth/signout" method="post">
-          <button className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded transition-colors font-medium">
-            Uitloggen
-          </button>
-        </form>
+        
+        <div className="flex items-center gap-3">
+          {/* Beheerpaneel Knop (Enkel voor leerkrachten) */}
+          {profiel.rol === 'leerkracht' && (
+            <Link 
+              href="/admin" 
+              className="text-sm bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded transition-colors font-bold shadow-sm flex items-center gap-2"
+            >
+              <span>⚙️</span> Beheerpaneel
+            </Link>
+          )}
+          
+          <form action="/auth/signout" method="post">
+            <button className="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded transition-colors font-medium border border-gray-200">
+              Uitloggen
+            </button>
+          </form>
+        </div>
       </div>
 
       {/* Tabs Menu (Enkel tonen als er opdrachten zijn) */}
