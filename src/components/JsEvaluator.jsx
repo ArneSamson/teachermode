@@ -6,7 +6,7 @@ import { javascript } from '@codemirror/lang-javascript';
 import { EditorView } from '@codemirror/view';
 import { slaVoortgangOp } from '@/app/editor/actions';
 
-export default function JsEvaluator({ initialCode, testScript, opdrachtId, modeloplossing, isVoltooid }) {
+export default function JsEvaluator({ initialCode, testScript, opdrachtId, modeloplossing, isVoltooid, isReviewMode }) {
   const [code, setCode] = useState(initialCode || '');
   const [feedback, setFeedback] = useState({ status: 'idle', message: "Klik op 'Code Uitvoeren & Testen' om je logica te verifiëren." });
   const [consoleLogs, setConsoleLogs] = useState([]);
@@ -27,13 +27,13 @@ export default function JsEvaluator({ initialCode, testScript, opdrachtId, model
         if (event.data.success) {
           setFeedback({ status: 'success', message: `✅ Correct! ${event.data.message || ''}` });
           // Sla alleen op als de opdracht nog NIET voltooid is
-          if (!isVoltooid) {
+          if (!isVoltooid && !isReviewMode) {
             await slaVoortgangOp(opdrachtId, code, true);
           }
         } else {
           setFeedback({ status: 'error', message: `❌ Fout: ${event.data.message}` });
           // Sla foute pogingen ook alleen op als de opdracht nog NIET voltooid is
-          if (!isVoltooid) {
+          if (!isVoltooid && !isReviewMode) {
             await slaVoortgangOp(opdrachtId, code, false);
           }
         }
@@ -44,7 +44,7 @@ export default function JsEvaluator({ initialCode, testScript, opdrachtId, model
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [code, opdrachtId, isVoltooid]); // 🔥 code en isVoltooid toegevoegd!
+  }, [code, opdrachtId, isVoltooid, isReviewMode]); // 🔥 code, isVoltooid en isReviewMode toegevoegd!
 
   const handleReset = () => {
     if (window.confirm("Weet je zeker dat je de code wilt resetten? Al je huidige werk voor deze oefening gaat verloren.")) {

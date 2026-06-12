@@ -301,16 +301,25 @@ export default async function AdminDashboard({ searchParams }) {
                                 {status === 'bezig' && <span className="text-orange-600 font-bold">... Bezig</span>}
                                 {status === 'niet_gestart' && <span className="text-gray-400">Niet gestart</span>}
                               </td>
-                              <td className="py-2 text-right pr-2">
-                                {status !== 'voltooid' ? (
-                                  <form action={forceerVoltooid.bind(null, leerling.id, opdracht.id)}>
-                                    <button type="submit" className="text-green-600 hover:underline text-xs">+ Forceer Voltooid</button>
-                                  </form>
-                                ) : (
-                                  <form action={resetVoortgang.bind(null, leerling.id, opdracht.id)}>
-                                    <button type="submit" className="text-red-600 hover:underline text-xs">↺ Reset</button>
-                                  </form>
-                                )}
+                              <td className="py-2 pr-2">
+                                <div className="flex justify-end items-center gap-4">
+                                  <Link 
+                                    href={`/admin/review/${leerling.id}/${opdracht.id}`} 
+                                    className="text-blue-600 hover:text-blue-800 hover:underline text-xs font-bold"
+                                  >
+                                    👁️ Bekijk Code
+                                  </Link>
+                                  
+                                  {status !== 'voltooid' ? (
+                                    <form action={forceerVoltooid.bind(null, leerling.id, opdracht.id)}>
+                                      <button type="submit" className="text-green-600 hover:underline text-xs">+ Forceer</button>
+                                    </form>
+                                  ) : (
+                                    <form action={resetVoortgang.bind(null, leerling.id, opdracht.id)}>
+                                      <button type="submit" className="text-red-600 hover:underline text-xs">↺ Reset</button>
+                                    </form>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           );
@@ -359,16 +368,25 @@ export default async function AdminDashboard({ searchParams }) {
                                 {status === 'bezig' && <span className="text-orange-600 font-bold">... Bezig</span>}
                                 {status === 'niet_gestart' && <span className="text-gray-400">Niet gestart</span>}
                               </td>
-                              <td className="py-2 text-right pr-2">
-                                {status !== 'voltooid' ? (
-                                  <form action={forceerVoltooid.bind(null, leerling.id, opdracht.id)}>
-                                    <button type="submit" className="text-green-600 hover:underline text-xs">+ Forceer</button>
-                                  </form>
-                                ) : (
-                                  <form action={resetVoortgang.bind(null, leerling.id, opdracht.id)}>
-                                    <button type="submit" className="text-red-600 hover:underline text-xs">↺ Reset</button>
-                                  </form>
-                                )}
+                              <td className="py-2 pr-2">
+                                <div className="flex justify-end items-center gap-4">
+                                  <Link 
+                                    href={`/admin/review/${leerling.id}/${opdracht.id}`} 
+                                    className="text-blue-600 hover:text-blue-800 hover:underline text-xs font-bold"
+                                  >
+                                    👁️ Bekijk Code
+                                  </Link>
+                                  
+                                  {status !== 'voltooid' ? (
+                                    <form action={forceerVoltooid.bind(null, leerling.id, opdracht.id)}>
+                                      <button type="submit" className="text-green-600 hover:underline text-xs">+ Forceer</button>
+                                    </form>
+                                  ) : (
+                                    <form action={resetVoortgang.bind(null, leerling.id, opdracht.id)}>
+                                      <button type="submit" className="text-red-600 hover:underline text-xs">↺ Reset</button>
+                                    </form>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           );
