@@ -6,9 +6,10 @@ import { html } from '@codemirror/lang-html';
 import { EditorView } from '@codemirror/view';
 import { slaVoortgangOp } from '@/app/editor/actions';
 
-export default function HtmlEvaluator({ initialCode, testScript, opdrachtId }) {
+export default function HtmlEvaluator({ initialCode, testScript, opdrachtId, modeloplossing, isVoltooid }) {
   const [code, setCode] = useState(initialCode || '');
   const [feedback, setFeedback] = useState({ status: 'idle', message: "Klik op 'Code uitvoeren' om je oplossing te testen." });
+  const [toonOplossing, setToonOplossing] = useState(false);
   
   const iframeRef = useRef(null);
 
@@ -118,6 +119,30 @@ export default function HtmlEvaluator({ initialCode, testScript, opdrachtId }) {
              <button onClick={handleRunAndTest} style={styles.button}>▶ Query Uitvoeren & Testen</button>
              <button onClick={handleReset} style={styles.resetButton}>↻ Reset Code</button>
           </div>
+          {/* Modeloplossing sectie */}
+          {isVoltooid && modeloplossing && (
+            <div style={{ marginTop: '10px', marginBottom: '15px', border: '1px solid #10b981', borderRadius: '4px', overflow: 'hidden' }}>
+              <button 
+                onClick={() => setToonOplossing(!toonOplossing)}
+                style={{
+                  width: '100%', backgroundColor: '#10b981', color: 'white', border: 'none',
+                  padding: '10px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer',
+                  textAlign: 'left', display: 'flex', justifyContent: 'between', items: 'center'
+                }}
+              >
+                {toonOplossing ? '💡 Verberg Modeloplossing' : '💡 Bekijk Modeloplossing'}
+              </button>
+              
+              {toonOplossing && (
+                <pre style={{ 
+                  margin: 0, padding: '15px', backgroundColor: '#1e1e1e', color: '#d4d4d4', 
+                  fontFamily: 'monospace', fontSize: '13px', overflowX: 'auto', whiteSpace: 'pre-wrap'
+                }}>
+                  {modeloplossing}
+                </pre>
+              )}
+            </div>
+          )}
           <iframe 
             ref={iframeRef} 
             id="outputFrame" 

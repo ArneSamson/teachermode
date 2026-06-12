@@ -118,18 +118,24 @@ export default async function EditorPage({ params }) {
           opdrachtId={opdracht.id}
           initialCode={opdracht.start_code} 
           testScript={opdracht.test_script} 
+          modeloplossing={opdracht.modeloplossing}
+          isVoltooid={isVoltooid}
         />
       ) : opdracht.taal === 'sql' ? (
         <SqlEvaluator 
           opdrachtId={opdracht.id}
           initialCode={opdracht.start_code} 
           testScript={opdracht.test_script} 
+          modeloplossing={opdracht.modeloplossing}
+          isVoltooid={isVoltooid}
         />
       ) : (
         <HtmlEvaluator 
           opdrachtId={opdracht.id}
           initialCode={opdracht.start_code} 
           testScript={opdracht.test_script} 
+          modeloplossing={opdracht.modeloplossing}
+          isVoltooid={isVoltooid}
         />
       )}
     </div>
