@@ -31,16 +31,25 @@ export default function HtmlEvaluator({ initialCode, testScript, opdrachtId, mod
       if (event.data.type === 'test-result') {
         if (event.data.success) {
           setFeedback({ status: 'success', message: `✅ Correct! ${event.data.message}` });
-          await slaVoortgangOp(opdrachtId, true);
+          
+          // Sla alleen op als de opdracht nog NIET voltooid is
+          if (!isVoltooid) {
+            await slaVoortgangOp(opdrachtId, code, true); 
+          }
         } else {
           setFeedback({ status: 'error', message: `❌ Fout: ${event.data.message}` });
+          
+          // Sla foute pogingen ook alleen op als de opdracht nog NIET voltooid is
+          if (!isVoltooid) {
+            await slaVoortgangOp(opdrachtId, code, false); 
+          }
         }
       }
     };
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, [code, opdrachtId, isVoltooid]); // 🔥 isVoltooid is nu ook een afhankelijkheid!
 
   const handleReset = () => {
     if (window.confirm("Weet je zeker dat je de code wilt resetten? Al je huidige werk voor deze oefening gaat verloren.")) {
