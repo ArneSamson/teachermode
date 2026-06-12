@@ -231,8 +231,8 @@ export default async function Dashboard({ searchParams }) {
                   const bijbehorendeBasis = array.find(o => o.volgorde === opdracht.volgorde && !o.is_extra);
                   const isExtraGelocked = opdracht.is_extra && bijbehorendeBasis && !voltooideOpdrachten.has(bijbehorendeBasis.id);
                   
-                  const isGelocked = isBasisGelocked || isExtraGelocked;
-
+                  const isGelocked = profiel?.rol !== 'leerkracht' && (isBasisGelocked || isExtraGelocked);
+                  
                   return (
                     <div key={opdracht.id} className={`border p-5 rounded-lg shadow-sm flex flex-col md:flex-row md:justify-between md:items-center bg-white transition-colors gap-4 ${isGelocked ? 'opacity-60 bg-gray-50' : 'hover:border-blue-300'}`}>
                       <div>

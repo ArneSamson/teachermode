@@ -13,6 +13,14 @@ export default async function EditorPage({ params }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
+  const { data: profiel } = await supabase
+    .from('profielen')
+    .select('rol')
+    .eq('id', user.id)
+    .single();
+
+  const isLeerkracht = profiel?.rol === 'leerkracht';
+
   // 2. Haal de opdracht op
   const { data: opdracht, error } = await supabase
     .from('opdrachten')
@@ -54,7 +62,7 @@ export default async function EditorPage({ params }) {
     (opdracht.is_extra && bijbehorendeBasis && !voltooideIds.has(bijbehorendeBasis.id));
 
   // Als de leerling probeert te 'smokkelen' via de URL -> stuur terug naar dashboard
-  if (isGelocked && !isVoltooid) {
+  if (isGelocked && !isVoltooid && !isLeerkracht) {
     redirect('/dashboard');
   }
 
