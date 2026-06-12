@@ -21,6 +21,13 @@ export default async function Dashboard({ searchParams }) {
     .eq('id', user.id)
     .single();
 
+  // Haal badges op
+  const { data: behaaldeBadges } = await supabase
+    .from('behaalde_badges')
+    .select('*')
+    .eq('profiel_id', user.id)
+    .order('behaald_op', { ascending: false });
+
   if (profielError || !profiel) {
     return (
       <div className="p-8 max-w-4xl mx-auto text-red-600 bg-red-50 rounded border border-red-200">
@@ -114,6 +121,38 @@ export default async function Dashboard({ searchParams }) {
             </button>
           </form>
         </div>
+      </div>
+
+      {/* Gamificatie: Trofeeënkast */}
+      <div className="mb-8 bg-white p-6 rounded shadow-sm border border-yellow-200">
+        <h2 className="text-xl font-bold mb-4 text-gray-800 flex items-center gap-2">
+          <span>🏆</span> Jouw Trofeeënkast
+        </h2>
+        
+        {behaaldeBadges && behaaldeBadges.length > 0 ? (
+          <div className="flex flex-wrap gap-4">
+            {behaaldeBadges.map(badge => (
+              <div 
+                key={badge.id} 
+                className="group relative flex items-center gap-3 bg-yellow-50 border border-yellow-200 px-4 py-2 rounded-full cursor-help hover:bg-yellow-100 transition-colors"
+              >
+                <span className="text-2xl">{badge.icoon}</span>
+                <span className="font-bold text-yellow-800 text-sm">{badge.badge_naam}</span>
+                
+                {/* Tooltip met beschrijving (zichtbaar op hover) */}
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-10 text-center shadow-lg">
+                  {badge.beschrijving}
+                  {/* Kleine pijl voor de tooltip */}
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-gray-500 italic text-sm">
+            Nog geen badges behaald. Start snel met je eerste oefening!
+          </div>
+        )}
       </div>
 
       {/* Tabs Menu (Enkel tonen als er opdrachten zijn) */}
