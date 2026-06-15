@@ -200,7 +200,7 @@ export default async function Dashboard({ searchParams }) {
             </h2>
             <div className="grid gap-4">
               {opdrachtenPerJaar[jaar]
-                .sort((a, b) => a.volgorde - b.volgorde)
+                .sort((a, b) => a.volgorde - b.volgorde || a.titel.localeCompare(b.titel))
                 .map((opdracht, index, array) => {
                   const isVoltooid = voltooideOpdrachten.has(opdracht.id);
                   const vorigeBasis = array.slice(0, index).reverse().find(o => !o.is_extra);
