@@ -64,7 +64,7 @@ export default async function EditorPage({ params }) {
   if (opdracht.is_toets && isVoltooid) {
     return (
       <div className="p-8 max-w-6xl mx-auto">
-        <Link href="/dashboard" className="text-neon-blue hover:text-white transition-colors mb-6 font-bold inline-flex items-center gap-2">
+        <Link href={`/dashboard?tab=${opdracht.taal}`} className="text-neon-blue hover:text-white transition-colors mb-6 font-bold inline-flex items-center gap-2">
           &larr; Terug naar overzicht
         </Link>
         <div className="p-8 text-neon-orange font-bold text-center mt-10 bg-neon-orange/10 border border-neon-orange/30 rounded-xl shadow-glow-orange/20">
@@ -81,7 +81,7 @@ export default async function EditorPage({ params }) {
   if (opdracht.enkel_schooluren && !isSchoolTijd) {
     return (
       <div className="p-8 max-w-6xl mx-auto">
-        <Link href="/dashboard" className="text-neon-blue hover:text-white transition-colors mb-6 font-bold inline-flex items-center gap-2">
+        <Link href={`/dashboard?tab=${opdracht.taal}`} className="text-neon-blue hover:text-white transition-colors mb-6 font-bold inline-flex items-center gap-2">
           &larr; Terug naar overzicht
         </Link>
         <div className="p-8 text-red-400 font-bold text-center mt-10 bg-red-950/20 border border-red-900/50 rounded-xl">
@@ -93,7 +93,7 @@ export default async function EditorPage({ params }) {
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
-      <Link href="/dashboard" className="text-neon-blue hover:text-white transition-colors mb-6 font-bold inline-flex items-center gap-2">
+      <Link href={`/dashboard?tab=${opdracht.taal}`} className="text-neon-blue hover:text-white transition-colors mb-6 font-bold inline-flex items-center gap-2">
         &larr; Terug naar overzicht
       </Link>
       
