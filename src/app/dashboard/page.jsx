@@ -151,7 +151,7 @@ export default async function Dashboard({ searchParams }) {
                 href={`/dashboard?tab=${taalCode}`}
                 className={`px-5 py-3 font-bold text-sm rounded-t-lg transition-all duration-300 ${
                   isActive 
-                    ? 'bg-neon-blue text-bg-app shadow-[0_-5px_15px_rgba(0,240,255,0.15)] transform translate-y-px' 
+                    ? 'bg-neon-blue text-bg-app shadow-[0_-5px_15px_rgba(255, 95, 0, 0.4)] transform translate-y-px' 
                     : 'bg-bg-card text-text-muted hover:bg-border-main hover:text-text-main border border-b-0 border-transparent'
                 }`}
               >
