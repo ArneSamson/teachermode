@@ -105,7 +105,7 @@ export default function JsEvaluator({ initialCode, testScript, opdrachtId, model
         </div>
         <div style={styles.outputPanel}>
           <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-            <button onClick={handleRunAndTest} style={styles.button}>▶ Query Uitvoeren & Testen</button>
+            <button onClick={handleRunAndTest} style={styles.button}>▶ Code Uitvoeren & Testen</button>
             <button onClick={handleReset} style={styles.resetButton}>↻ Reset Code</button>
           </div>
           {/* Modeloplossing sectie */}
