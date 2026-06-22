@@ -38,27 +38,44 @@ export default async function EditorPage({ params }) {
     .eq('status', 'voltooid');
 
   const voltooideIds = new Set(voortgangLijst?.map(v => v.opdracht_id) || []);
+  const isVoltooid = voltooideIds.has(id);
 
-  // 4. BEVEILIGING: Is deze opdracht vergrendeld?
+  // 4. BEVEILIGING & VOLGENDE OPDRACHT
+  // We halen titel mee op zodat we dezelfde sortering kunnen doen als op het dashboard
   const { data: moduleOpdrachten } = await supabase
     .from('opdrachten')
-    .select('id, volgorde, is_extra')
+    .select('id, volgorde, is_extra, titel')
     .eq('taal', opdracht.taal)
     .eq('jaar_niveau', opdracht.jaar_niveau)
-    .order('volgorde', { ascending: false });
+    .eq('enabled', true); // Enkel actieve opdrachten!
 
-  const isVoltooid = voltooideIds.has(id);
+  // We sorteren exact zoals op het dashboard: eerst op volgorde, bij gelijkstand op titel
+  const sortedOpdrachten = [...(moduleOpdrachten || [])].sort((a, b) => a.volgorde - b.volgorde || a.titel.localeCompare(b.titel));
   
-  const vorigeBasis = moduleOpdrachten?.find(o => o.volgorde < opdracht.volgorde && !o.is_extra);
-  const bijbehorendeBasis = moduleOpdrachten?.find(o => o.volgorde === opdracht.volgorde && !o.is_extra);
+  // Zoek waar we ons nu bevinden in de lijst
+  const currentIndex = sortedOpdrachten.findIndex(o => o.id === opdracht.id);
 
-  const isGelocked = 
-    (!opdracht.is_extra && vorigeBasis && !voltooideIds.has(vorigeBasis.id)) ||
-    (opdracht.is_extra && bijbehorendeBasis && !voltooideIds.has(bijbehorendeBasis.id));
-
-  if (isGelocked && !isVoltooid && !isLeerkracht) {
-    redirect('/dashboard');
+  // Bepaal of de huidige opdracht gelocked is
+  let isGelocked = false;
+  if (!isLeerkracht) {
+    if (!opdracht.is_extra) {
+      // Basisopdrachten kijken naar de vorige basisopdracht
+      const vorigeBasis = sortedOpdrachten.slice(0, currentIndex).reverse().find(o => !o.is_extra);
+      isGelocked = vorigeBasis && !voltooideIds.has(vorigeBasis.id);
+    } else {
+      // Extra opdrachten kijken naar hun directe voorganger
+      const vorigeOpdracht = sortedOpdrachten[currentIndex - 1];
+      isGelocked = vorigeOpdracht && !voltooideIds.has(vorigeOpdracht.id);
+    }
   }
+
+  // Schop ze terug naar het dashboard als ze hier niet mogen zijn
+  if (isGelocked && !isVoltooid && !isLeerkracht) {
+    redirect(`/dashboard?tab=${opdracht.taal}`);
+  }
+
+  // Zoek de volgende opdracht voor de "Volgende" knop
+  const volgendeOpdracht = currentIndex !== -1 && currentIndex < sortedOpdrachten.length - 1 ? sortedOpdrachten[currentIndex + 1] : null;
 
   // 5. Blokkeer als het een toets is die al voltooid is
   if (opdracht.is_toets && isVoltooid) {
@@ -93,9 +110,22 @@ export default async function EditorPage({ params }) {
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
-      <Link href={`/dashboard?tab=${opdracht.taal}`} className="text-neon-blue hover:text-white transition-colors mb-6 font-bold inline-flex items-center gap-2">
-        &larr; Terug naar overzicht
-      </Link>
+      {/* Bovenste navigatiebalk */}
+      <div className="flex justify-between items-center mb-6">
+        <Link href={`/dashboard?tab=${opdracht.taal}`} className="text-neon-blue hover:text-white transition-colors font-bold inline-flex items-center gap-2">
+          &larr; Terug naar overzicht
+        </Link>
+        
+        {/* De 'Volgende' knop verschijnt enkel als deze opdracht af is én er nog eentje in de lijst staat */}
+        {isVoltooid && volgendeOpdracht && (
+          <Link 
+            href={`/editor/${volgendeOpdracht.id}`} 
+            className="bg-neon-blue text-bg-app px-5 py-2 rounded-full font-bold shadow-glow-blue hover:bg-white transition-all duration-300 inline-flex items-center gap-2"
+          >
+            Volgende Oefening &rarr;
+          </Link>
+        )}
+      </div>
       
       {/* Uitleg Container */}
       <div className="mb-8 bg-bg-card p-6 rounded-xl border border-border-main shadow-lg flex flex-col md:flex-row justify-between items-start gap-4">
@@ -111,9 +141,11 @@ export default async function EditorPage({ params }) {
         
         {/* Visuele feedback voor gewone oefeningen die al af zijn */}
         {!opdracht.is_toets && isVoltooid && (
-          <span className="bg-neon-green/10 text-neon-green px-4 py-2 rounded-full text-sm font-bold border border-neon-green/30 shadow-glow-green/20 whitespace-nowrap">
-            ✓ Voltooid (Herhalen)
-          </span>
+          <div className="flex flex-col items-end gap-3">
+            <span className="bg-neon-green/10 text-neon-green px-4 py-2 rounded-full text-sm font-bold border border-neon-green/30 shadow-glow-green/20 whitespace-nowrap">
+              ✓ Voltooid (Herhalen)
+            </span>
+          </div>
         )}
       </div>
       
