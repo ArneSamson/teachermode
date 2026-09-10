@@ -13,7 +13,7 @@ export default function HtmlEvaluator({ initialCode, testScript, opdrachtId, mod
   
   const iframeRef = useRef(null);
 
-  const disablePaste = EditorView.domEventHandlers({
+  const beveiligEditor = EditorView.domEventHandlers({
     paste(event, view) {
       event.preventDefault(); 
       
@@ -22,6 +22,14 @@ export default function HtmlEvaluator({ initialCode, testScript, opdrachtId, mod
         message: '❌ Kopiëren en plakken is uitgeschakeld. Probeer de code zelf te typen!' 
       });
       
+      return true; 
+    },
+    drop(event) {
+      event.preventDefault();
+      setFeedback({
+        status: 'error',
+        message: '❌ Slepen en neerzetten is uitgeschakeld. Probeer de code zelf te typen!'
+      });
       return true; 
     }
   });
@@ -109,6 +117,29 @@ export default function HtmlEvaluator({ initialCode, testScript, opdrachtId, mod
     }
   };
 
+  const handleCodeChange = (nieuweCode, viewUpdate) => {
+    // Check of het aantal karakters in één keer verdacht veel groter wordt
+    // (Auto-aanvullen van tags door CodeMirror is max ~10 karakters)
+    if (nieuweCode.length - code.length > 25) {
+      setFeedback({ 
+        status: 'error', 
+        message: '❌ Hack gedetecteerd! Dat typte je wel héél snel... Schrijf de code zelf!' 
+      });
+
+      if(viewUpdate && viewUpdate.view) {
+        const view = viewUpdate.view;
+        view.dispatch({
+          changes: { from: 0, to: view.state.doc.length, insert: code }
+        });
+      }
+      // We weigeren de code op te slaan in de state
+      return;
+    }
+    
+    // Alles is in orde, sla de getypte code op
+    setCode(nieuweCode);
+  };
+
   return (
     <div className="w-full">
       <div className="flex flex-col lg:flex-row gap-6 h-[600px]">
@@ -121,8 +152,8 @@ export default function HtmlEvaluator({ initialCode, testScript, opdrachtId, mod
               height="100%"
               style={{ minHeight: '100%' }}
               theme="dark"
-              extensions={[html({ selfClosingTags: true, matchClosingTags: true }), disablePaste]}
-              onChange={(value) => setCode(value)}
+              extensions={[html({ selfClosingTags: true, matchClosingTags: true }), beveiligEditor]}
+              onChange={(value, viewUpdate) => handleCodeChange(value, viewUpdate)}
             />
           </div>
         </div>
