@@ -60,6 +60,12 @@ export default async function AdminDashboard({ searchParams }) {
     .select('*')
     .order('naam', { ascending: true });
 
+    // Voeg dit toe bij je andere Supabase queries in admin/page.jsx
+  const { data: toetsen } = await supabase
+    .from('toetsen')
+    .select('*')
+    .order('jaar_niveau', { ascending: false });
+
   const geefVoortgangStatus = (leerlingId, opdrachtId) => {
     const match = alleVoortgang?.find(v => v.profiel_id === leerlingId && v.opdracht_id === opdrachtId);
     return match ? match.status : 'niet_gestart';
@@ -87,7 +93,8 @@ export default async function AdminDashboard({ searchParams }) {
           { id: 'cms', label: '+ Nieuwe Opdracht Maken' },
           { id: 'leerling', label: 'Voortgang per Leerling' },
           { id: 'opdracht', label: 'Voortgang per Opdracht' },
-          { id: 'klassen', label: 'Klas- & Projectbeheer' }
+          { id: 'klassen', label: 'Klas- & Projectbeheer' },
+          { id: 'toetsen', label: 'Toetsen Overzicht' }
         ].map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -471,6 +478,70 @@ export default async function AdminDashboard({ searchParams }) {
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* CONTENT TAB 5: TOETSEN */}
+      {activeTab === 'toetsen' && (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold text-text-main">Beheer Toetsen</h2>
+          </div>
+
+          <div className="grid gap-4">
+            {toetsen?.map((toets) => (
+              <div key={toets.id} className="bg-bg-card border border-border-main p-5 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-gray-500 transition-colors">
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="font-bold text-lg text-text-main">{toets.titel}</h3>
+                    {toets.is_actief ? (
+                      <span className="bg-neon-green/10 text-neon-green text-xs px-2.5 py-0.5 rounded-full font-bold border border-neon-green/30">
+                        Actief (Open)
+                      </span>
+                    ) : (
+                      <span className="bg-red-950/30 text-red-500 text-xs px-2.5 py-0.5 rounded-full font-bold border border-red-900/50">
+                        Gesloten
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-text-muted font-mono">
+                    <span>{toets.jaar_niveau}e jaar</span>
+                    <span>•</span>
+                    <span>{toets.taal.toUpperCase()}</span>
+                    <span>•</span>
+                    <span>⏱ {toets.tijdslimiet_minuten} min</span>
+                  </div>
+                </div>
+                
+                <div className="flex gap-3 w-full md:w-auto">
+                  {/* Optioneel: Een knop om de toets status (open/dicht) te togglen via een Server Action */}
+                  <form action={async () => {
+                    'use server';
+                    const { createClient } = await import('@/lib/supabaseServer');
+                    const supabase = await createClient();
+                    await supabase.from('toetsen').update({ is_actief: !toets.is_actief }).eq('id', toets.id);
+                  }}>
+                    <button className="px-4 py-2 bg-bg-app border border-border-main text-text-muted hover:text-white rounded-full font-bold transition-colors w-full md:w-auto">
+                      {toets.is_actief ? 'Sluit Toets' : 'Open Toets'}
+                    </button>
+                  </form>
+
+                  <Link 
+                    href={`/admin/toetsen/${toets.id}`}
+                    className="px-4 py-2 bg-neon-blue text-bg-app hover:shadow-glow-blue rounded-full font-bold transition-all w-full md:w-auto text-center"
+                  >
+                    Bekijk Resultaten &rarr;
+                  </Link>
+                </div>
+              </div>
+            ))}
+
+            {!toetsen?.length && (
+              <div className="p-8 text-center text-text-muted italic border border-border-main rounded-xl bg-bg-app">
+                Er zijn nog geen toetsen aangemaakt in de database.
+              </div>
+            )}
           </div>
         </div>
       )}
