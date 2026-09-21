@@ -43,7 +43,7 @@ export default async function Dashboard({ searchParams }) {
   // Filter de toetsen: toon ze enkel als ze ACTIEF zijn, OF als de leerling een SESSIE heeft
   const zichtbareToetsen = alleToetsen?.filter(toets => {
     const heeftSessie = toetsSessies?.some(s => s.toets_id === toets.id);
-    return toets.is_actief || heeftSessie;
+    return toets.is_actief || heeftSessie || profiel?.rol === 'leerkracht'; // Leerkrachten zien alle toetsen
   });
 
   if (profielError || !profiel) {
