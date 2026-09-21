@@ -6,7 +6,7 @@ import { html } from '@codemirror/lang-html';
 import { EditorView } from '@codemirror/view';
 import { slaVoortgangOp } from '@/app/editor/actions';
 
-export default function HtmlEvaluator({ initialCode, testScript, opdrachtId, modeloplossing, isVoltooid, isReviewMode }) {
+export default function HtmlEvaluator({ initialCode, testScript, opdrachtId, modeloplossing, isVoltooid, isReviewMode, onCodeChange }) {
   const [code, setCode] = useState(initialCode || '');
   const [feedback, setFeedback] = useState({ status: 'idle', message: "Klik op 'Uitvoeren & Testen' om je oplossing te testen." });
   const [toonOplossing, setToonOplossing] = useState(false);
@@ -138,6 +138,10 @@ export default function HtmlEvaluator({ initialCode, testScript, opdrachtId, mod
     
     // Alles is in orde, sla de getypte code op
     setCode(nieuweCode);
+
+    if(onCodeChange) {
+      onCodeChange(nieuweCode);
+    }
   };
 
   return (
