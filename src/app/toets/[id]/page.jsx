@@ -46,7 +46,7 @@ export default async function ToetsServerPage({ params }) {
         <h1 className="text-3xl font-bold text-text-main mb-4">Waarschuwing: Toets {toets.titel}</h1>
         <p className="text-lg text-text-muted mb-6">
           Je krijgt exact <strong>{toets.tijdslimiet_minuten} minuten</strong> voor deze toets. 
-          Zodra je op de knop drukt, start de timer onverbiddelijk op de server. 
+          Zodra je op de knop drukt, start de timer. 
           Sluit het tabblad niet onnodig af.
         </p>
         <form action={async () => {

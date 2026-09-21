@@ -27,6 +27,25 @@ export default async function Dashboard({ searchParams }) {
     .eq('profiel_id', user.id)
     .order('behaald_op', { ascending: false });
 
+  // Haal ALLE toetsen op voor het jaar van de leerling (actief en gesloten)
+  const { data: alleToetsen } = await supabase
+    .from('toetsen')
+    .select('*')
+    .eq('jaar_niveau', profiel.jaar_niveau)
+    .order('is_actief', { ascending: false }); // Zet de actieve toetsen bovenaan
+
+  // Haal de sessies van de leerling op
+  const { data: toetsSessies } = await supabase
+    .from('toets_sessies')
+    .select('*')
+    .eq('profiel_id', user.id);
+
+  // Filter de toetsen: toon ze enkel als ze ACTIEF zijn, OF als de leerling een SESSIE heeft
+  const zichtbareToetsen = alleToetsen?.filter(toets => {
+    const heeftSessie = toetsSessies?.some(s => s.toets_id === toets.id);
+    return toets.is_actief || heeftSessie;
+  });
+
   if (profielError || !profiel) {
     return (
       <div className="p-8 max-w-4xl mx-auto text-red-400 bg-red-950/20 rounded-lg border border-red-900/50 font-mono text-sm">
@@ -139,6 +158,91 @@ export default async function Dashboard({ searchParams }) {
           </div>
         )}
       </div>
+
+      {zichtbareToetsen && zichtbareToetsen.length > 0 && (
+        <div className="mb-12">
+          <h2 className="text-2xl font-bold text-neon-orange mb-6 flex items-center gap-2">
+            <span>📝</span> Jouw Toetsen
+          </h2>
+          <div className="grid gap-4">
+            {zichtbareToetsen.map((toets) => {
+              const sessie = toetsSessies?.find(s => s.toets_id === toets.id);
+              const isAfgerond = sessie?.is_ingediend;
+              const heeftScore = sessie?.leerkracht_score !== null && sessie?.leerkracht_score !== undefined;
+              const isToetsOpen = toets.is_actief;
+
+              return (
+                <div key={toets.id} className={`border p-6 rounded-xl transition-all ${
+                  isToetsOpen 
+                    ? 'bg-bg-card border-neon-orange/50 shadow-glow-orange/5' 
+                    : 'bg-bg-app border-border-main opacity-80' // Grijzer uiterlijk voor gesloten toetsen
+                }`}>
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                      <div className="flex items-center gap-3">
+                        <h3 className="font-bold text-xl text-text-main">{toets.titel}</h3>
+                        {!isToetsOpen && (
+                          <span className="bg-red-950/30 text-red-500 text-xs px-2 py-1 rounded-full font-bold border border-red-900/50">
+                            Gesloten
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-text-muted text-sm mt-1">Tijdslimiet: {toets.tijdslimiet_minuten} minuten</p>
+                    </div>
+                    
+                    {!sessie && isToetsOpen ? (
+                      // Leerling is nog niet begonnen en de toets is open
+                      <Link 
+                        href={`/toets/${toets.id}`}
+                        className="bg-neon-orange text-white px-6 py-2 rounded-full font-bold hover:shadow-glow-orange transition-all whitespace-nowrap"
+                      >
+                        Start Toets
+                      </Link>
+                    ) : isAfgerond ? (
+                      // Toets is ingediend (open of gesloten, maakt niet uit)
+                      <div className="text-right">
+                        {heeftScore ? (
+                          <div className="bg-neon-green/10 border border-neon-green/30 px-4 py-2 rounded-lg">
+                            <span className="block text-xs text-text-muted uppercase tracking-wider mb-1">Jouw Score</span>
+                            <span className="text-xl font-bold text-neon-green">{sessie.leerkracht_score}/20</span>
+                          </div>
+                        ) : (
+                          <span className="bg-bg-app border border-border-main text-text-muted px-4 py-2 rounded-full font-bold text-sm">
+                            Wachten op verbetering...
+                          </span>
+                        )}
+                      </div>
+                    ) : sessie && !isAfgerond && isToetsOpen ? (
+                      // Leerling is bezig en toets is nog open
+                      <Link 
+                        href={`/toets/${toets.id}`}
+                        className="border border-neon-orange text-neon-orange px-6 py-2 rounded-full font-bold hover:bg-neon-orange hover:text-white transition-all whitespace-nowrap"
+                      >
+                        Ga verder
+                      </Link>
+                    ) : (
+                      // Leerling was bezig (niet ingediend) maar de leerkracht heeft de toets intussen gesloten
+                      <span className="bg-bg-app border border-border-main text-red-400 px-4 py-2 rounded-full font-bold text-sm">
+                        Niet tijdig ingediend
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Toon de feedback van de leerkracht als die er is */}
+                  {isAfgerond && heeftScore && sessie.leerkracht_feedback && (
+                    <div className="mt-4 pt-4 border-t border-border-main">
+                      <p className="text-sm font-bold text-neon-blue mb-1">Feedback van Meneer Samson:</p>
+                      <p className="text-text-main bg-bg-app p-4 rounded-lg italic text-sm">
+                        "{sessie.leerkracht_feedback}"
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       {beschikbareTalen.length > 0 && (
