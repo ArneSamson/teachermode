@@ -27,23 +27,30 @@ export default async function Dashboard({ searchParams }) {
     .eq('profiel_id', user.id)
     .order('behaald_op', { ascending: false });
 
-  // Haal ALLE toetsen op voor het jaar van de leerling (actief en gesloten)
-  const { data: alleToetsen } = await supabase
+  const isLeerkracht = profiel?.rol === 'leerkracht';
+
+  // Bouw de query voor toetsen op
+  let toetsenQuery = supabase
     .from('toetsen')
     .select('*')
-    .eq('jaar_niveau', profiel.jaar_niveau)
-    .order('is_actief', { ascending: false }); // Zet de actieve toetsen bovenaan
+    .order('is_actief', { ascending: false });
 
-  // Haal de sessies van de leerling op
+  // Als het een leerling is, filter dan specifiek op hun leerjaar
+  if (!isLeerkracht) {
+    toetsenQuery = toetsenQuery.eq('jaar_niveau', profiel.jaar_niveau);
+  }
+
+  const { data: alleToetsen } = await toetsenQuery;
+
   const { data: toetsSessies } = await supabase
     .from('toets_sessies')
     .select('*')
     .eq('profiel_id', user.id);
 
-  // Filter de toetsen: toon ze enkel als ze ACTIEF zijn, OF als de leerling een SESSIE heeft
+  // Zichtbaarheid bepalen
   const zichtbareToetsen = alleToetsen?.filter(toets => {
     const heeftSessie = toetsSessies?.some(s => s.toets_id === toets.id);
-    return toets.is_actief || heeftSessie || profiel?.rol === 'leerkracht'; // Leerkrachten zien alle toetsen
+    return toets.is_actief || heeftSessie || isLeerkracht;
   });
 
   if (profielError || !profiel) {
@@ -190,13 +197,13 @@ export default async function Dashboard({ searchParams }) {
                       <p className="text-text-muted text-sm mt-1">Tijdslimiet: {toets.tijdslimiet_minuten} minuten</p>
                     </div>
                     
-                    {!sessie && isToetsOpen ? (
-                      // Leerling is nog niet begonnen en de toets is open
+                    {!sessie && (isToetsOpen || isLeerkracht) ? (
+                      // Leerling start, of leerkracht opent een preview
                       <Link 
                         href={`/toets/${toets.id}`}
                         className="bg-neon-orange text-white px-6 py-2 rounded-full font-bold hover:shadow-glow-orange transition-all whitespace-nowrap"
                       >
-                        Start Toets
+                        {isLeerkracht ? 'Preview Toets' : 'Start Toets'}
                       </Link>
                     ) : isAfgerond ? (
                       // Toets is ingediend (open of gesloten, maakt niet uit)
@@ -212,8 +219,8 @@ export default async function Dashboard({ searchParams }) {
                           </span>
                         )}
                       </div>
-                    ) : sessie && !isAfgerond && isToetsOpen ? (
-                      // Leerling is bezig en toets is nog open
+                    ) : sessie && !isAfgerond && (isToetsOpen || isLeerkracht) ? (
+                      // Leerling is bezig, of leerkracht was een preview aan het testen
                       <Link 
                         href={`/toets/${toets.id}`}
                         className="border border-neon-orange text-neon-orange px-6 py-2 rounded-full font-bold hover:bg-neon-orange hover:text-white transition-all whitespace-nowrap"
@@ -221,7 +228,7 @@ export default async function Dashboard({ searchParams }) {
                         Ga verder
                       </Link>
                     ) : (
-                      // Leerling was bezig (niet ingediend) maar de leerkracht heeft de toets intussen gesloten
+                      // Enkel voor leerlingen wiens tijd verstreken is zonder in te dienen
                       <span className="bg-bg-app border border-border-main text-red-400 px-4 py-2 rounded-full font-bold text-sm">
                         Niet tijdig ingediend
                       </span>
