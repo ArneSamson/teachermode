@@ -4,9 +4,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { sql } from '@codemirror/lang-sql';
 import { EditorView } from '@codemirror/view';
-import { slaVoortgangOp } from '@/app/editor/actions';
+import { slaVoortgangOp, autosaveOefening } from '@/app/editor/actions';
 
-export default function SqlEvaluator({ initialCode, testScript, opdrachtId, modeloplossing, isVoltooid, isReviewMode }) {
+export default function SqlEvaluator({ initialCode, testScript, opdrachtId, modeloplossing, isVoltooid, isReviewMode, onCodeChange }) {
   const [code, setCode] = useState(initialCode || '');
   const [feedback, setFeedback] = useState({ status: 'idle', message: "Klik op 'Query Uitvoeren & Testen' om je SQL te verifiëren." });
   const [consoleLogs, setConsoleLogs] = useState([]);
@@ -102,6 +102,42 @@ export default function SqlEvaluator({ initialCode, testScript, opdrachtId, mode
     iframeDoc.close();
   };
 
+  // Automatisch opslaan op de achtergrond
+  useEffect(() => {
+    if (isReviewMode || onCodeChange) return;
+
+    const timer = setTimeout(() => {
+      if (code !== initialCode) {
+        autosaveOefening(opdrachtId, code);
+      }
+    }, 3000); 
+
+    return () => clearTimeout(timer);
+  }, [code, opdrachtId, initialCode, isReviewMode, onCodeChange]);
+
+  const handleCodeChange = (nieuweCode, viewUpdate) => {
+    if (nieuweCode.length - code.length > 25) {
+      setFeedback({ 
+        status: 'error', 
+        message: '❌ Hack gedetecteerd! Dat typte je wel héél snel... Schrijf de code zelf!' 
+      });
+
+      if(viewUpdate && viewUpdate.view) {
+        const view = viewUpdate.view;
+        view.dispatch({
+          changes: { from: 0, to: view.state.doc.length, insert: code }
+        });
+      }
+      return;
+    }
+    
+    setCode(nieuweCode);
+
+    if(onCodeChange) {
+      onCodeChange(nieuweCode);
+    }
+  };
+
   return (
     <div style={styles.container}>
       <div style={styles.workspace}>
@@ -114,7 +150,7 @@ export default function SqlEvaluator({ initialCode, testScript, opdrachtId, mode
               style={{ minHeight: '100%' }}
               theme="dark" 
               extensions={[sql(), disablePaste]} 
-              onChange={setCode} 
+              onChange={(value, viewUpdate) => handleCodeChange(value, viewUpdate)}
             />
           </div>
         </div>

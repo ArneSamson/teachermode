@@ -4,9 +4,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { javascript } from '@codemirror/lang-javascript';
 import { EditorView } from '@codemirror/view';
-import { slaVoortgangOp } from '@/app/editor/actions';
+import { slaVoortgangOp, autosaveOefening } from '@/app/editor/actions';
 
-export default function JsEvaluator({ initialCode, testScript, opdrachtId, modeloplossing, isVoltooid, isReviewMode }) {
+export default function JsEvaluator({ initialCode, testScript, opdrachtId, modeloplossing, isVoltooid, isReviewMode, onCodeChange }) {
   const [code, setCode] = useState(initialCode || '');
   const [feedback, setFeedback] = useState({ status: 'idle', message: "Klik op 'Code Uitvoeren & Testen' om je logica te verifiëren." });
   const [consoleLogs, setConsoleLogs] = useState([]);
@@ -94,13 +94,50 @@ export default function JsEvaluator({ initialCode, testScript, opdrachtId, model
     iframeDoc.close();
   };
 
+  // Automatisch opslaan op de achtergrond
+  useEffect(() => {
+    if (isReviewMode || onCodeChange) return;
+
+    const timer = setTimeout(() => {
+      if (code !== initialCode) {
+        autosaveOefening(opdrachtId, code);
+      }
+    }, 3000); 
+
+    return () => clearTimeout(timer);
+  }, [code, opdrachtId, initialCode, isReviewMode, onCodeChange]);
+
+  const handleCodeChange = (nieuweCode, viewUpdate) => {
+    if (nieuweCode.length - code.length > 25) {
+      setFeedback({ 
+        status: 'error', 
+        message: '❌ Hack gedetecteerd! Dat typte je wel héél snel... Schrijf de code zelf!' 
+      });
+
+      if(viewUpdate && viewUpdate.view) {
+        const view = viewUpdate.view;
+        view.dispatch({
+          changes: { from: 0, to: view.state.doc.length, insert: code }
+        });
+      }
+      return;
+    }
+    
+    setCode(nieuweCode);
+
+    if(onCodeChange) {
+      onCodeChange(nieuweCode);
+    }
+  };
+
+
   return (
     <div style={styles.container}>
       <div style={styles.workspace}>
         <div style={styles.editorPanel}>
           <div style={styles.editorHeader}>script.js</div>
           <div style={{ flex: 1, overflow: 'auto' }}>
-            <CodeMirror value={code} height="100%" theme="dark" extensions={[javascript(), disablePaste]} onChange={setCode} />
+            <CodeMirror value={code} height="100%" theme="dark" extensions={[javascript(), disablePaste]} onChange={(value, viewUpdate) => handleCodeChange(value, viewUpdate)} />
           </div>
         </div>
         <div style={styles.outputPanel}>
