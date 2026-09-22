@@ -66,7 +66,7 @@ async function checkEnDeelBadgesUit(profielId, isSucces, pogingen, supabase) {
   }
 }
 
-// We voegen 'ingegevenCode' toe aan de parameters
+// Jouw bestaande hoofdfunctie voor als ze op "Uitvoeren / Testen" klikken
 export async function slaVoortgangOp(opdrachtId, ingegevenCode, isSucces) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -110,16 +110,51 @@ export async function slaVoortgangOp(opdrachtId, ingegevenCode, isSucces) {
   }
 
   // 🔥 NIEUW: Controleer op badges!
-  // We berekenen het juiste aantal pogingen (het bestaande aantal + 1, of gewoon 1 als het nieuw is)
   const actuelePogingen = bestaand ? (bestaand.aantal_pogingen || 0) + 1 : 1;
   await checkEnDeelBadgesUit(user.id, isSucces, actuelePogingen, supabase);
 
-  // Vertel Next.js dat de cache in de prullenbak mag, 
-  // maar doe dit (voor de performance) best enkel als de status daadwerkelijk wijzigt naar succes.
   if (isSucces) {
     revalidatePath('/dashboard');
     revalidatePath(`/editor/${opdrachtId}`);
   }
 
   return { success: true };
+}
+
+// 🔥 DE NIEUWE AUTOSAVE FUNCTIE (Onzichtbaar voor de leerling, puur voor veiligheid)
+export async function autosaveOefening(opdrachtId, ingegevenCode) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) return;
+
+  const { data: bestaand } = await supabase
+    .from('voortgang')
+    .select('id, status')
+    .eq('profiel_id', user.id)
+    .eq('opdracht_id', opdrachtId)
+    .single();
+
+  if (bestaand) {
+    // Update enkel en alleen de code, raak de status ('voltooid' of 'bezig') niet aan!
+    await supabase
+      .from('voortgang')
+      .update({ 
+        huidige_code: ingegevenCode
+      })
+      .eq('id', bestaand.id);
+  } else {
+    // Als ze nog NOOIT op "Uitvoeren" hebben geklikt, maar al wel typen,
+    // maken we het record alvast aan met 0 pogingen.
+    await supabase
+      .from('voortgang')
+      .insert({
+        profiel_id: user.id,
+        opdracht_id: opdrachtId,
+        huidige_code: ingegevenCode,
+        aantal_pogingen: 0,
+        start_tijdstip: new Date().toISOString(),
+        status: 'bezig'
+      });
+  }
 }

@@ -37,6 +37,14 @@ export default async function EditorPage({ params }) {
     .eq('profiel_id', user.id)
     .eq('status', 'voltooid');
 
+  // Haal de specifieke voortgang van DEZE oefening op, zodat we de autosave code kunnen inladen
+  const { data: huidigeVoortgang } = await supabase
+    .from('voortgang')
+    .select('huidige_code')
+    .eq('profiel_id', user.id)
+    .eq('opdracht_id', id)
+    .single();
+
   const voltooideIds = new Set(voortgangLijst?.map(v => v.opdracht_id) || []);
   const isVoltooid = voltooideIds.has(id);
 
@@ -152,7 +160,7 @@ export default async function EditorPage({ params }) {
       {opdracht.taal === 'javascript' ? (
         <JsEvaluator 
           opdrachtId={opdracht.id}
-          initialCode={opdracht.start_code} 
+          initialCode={huidigeVoortgang?.huidige_code || opdracht.start_code || ''}
           testScript={opdracht.test_script} 
           modeloplossing={opdracht.modeloplossing}
           isVoltooid={isVoltooid}
@@ -160,7 +168,7 @@ export default async function EditorPage({ params }) {
       ) : opdracht.taal === 'sql' ? (
         <SqlEvaluator 
           opdrachtId={opdracht.id}
-          initialCode={opdracht.start_code} 
+          initialCode={huidigeVoortgang?.huidige_code || opdracht.start_code || ''} 
           testScript={opdracht.test_script} 
           modeloplossing={opdracht.modeloplossing}
           isVoltooid={isVoltooid}
@@ -168,7 +176,7 @@ export default async function EditorPage({ params }) {
       ) : (
         <HtmlEvaluator 
           opdrachtId={opdracht.id}
-          initialCode={opdracht.start_code} 
+          initialCode={huidigeVoortgang?.huidige_code || opdracht.start_code || ''}
           testScript={opdracht.test_script} 
           modeloplossing={opdracht.modeloplossing}
           isVoltooid={isVoltooid}

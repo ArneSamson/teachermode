@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { html } from '@codemirror/lang-html';
 import { EditorView } from '@codemirror/view';
-import { slaVoortgangOp } from '@/app/editor/actions';
+import { slaVoortgangOp, autosaveOefening } from '@/app/editor/actions';
 
 export default function HtmlEvaluator({ initialCode, testScript, opdrachtId, modeloplossing, isVoltooid, isReviewMode, onCodeChange }) {
   const [code, setCode] = useState(initialCode || '');
@@ -116,6 +116,23 @@ export default function HtmlEvaluator({ initialCode, testScript, opdrachtId, mod
       default: return 'bg-bg-app border-border-main text-text-muted';
     }
   };
+
+  // Automatisch opslaan op de achtergrond
+  useEffect(() => {
+    // Schakel autosave uit in de admin Review Modus óf als het een Toets is 
+    // (bij een toets regelt de ToetsClient de autosave via onCodeChange)
+    if (isReviewMode || onCodeChange) return;
+
+    // Sla pas op als ze 3 seconden gestopt zijn met typen
+    const timer = setTimeout(() => {
+      // Voorkom onnodige database calls als ze de startcode nog niet hebben aangepast
+      if (code !== initialCode) {
+        autosaveOefening(opdrachtId, code);
+      }
+    }, 3000); 
+
+    return () => clearTimeout(timer);
+  }, [code, opdrachtId, initialCode, isReviewMode, onCodeChange]);
 
   const handleCodeChange = (nieuweCode, viewUpdate) => {
     // Check of het aantal karakters in één keer verdacht veel groter wordt
